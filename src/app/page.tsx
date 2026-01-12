@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Activity, Clock, Zap, Users, Box, ArrowRightLeft } from "lucide-react";
 import { useStatus, useBlocks, useTransactions } from "@/lib/hooks";
 import { KpiCard, KpiGrid } from "@/components/kpi-card";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -44,8 +43,8 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">DevNet Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className="ippan-title">DevNet Dashboard</h1>
+          <p className="ippan-subtitle mt-1">
             L1-only explorer focused on deterministic primitives: HashTimer™ ordering, IPPAN Time, round finality.
           </p>
         </div>
@@ -58,13 +57,11 @@ export default function Dashboard() {
 
       {/* Error Banner */}
       {statusError && (
-        <Card className="border-destructive/50 bg-destructive/10">
-          <CardContent className="py-4">
-            <p className="text-sm text-destructive">
-              Failed to load <code>/status</code>. Check Vercel env var <code>NEXT_PUBLIC_IPPAN_API_BASE</code>.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="ippan-card border-destructive/50 bg-destructive/10 p-4">
+          <p className="text-sm text-destructive">
+            Failed to load <code>/status</code>. Check Vercel env var <code>NEXT_PUBLIC_IPPAN_API_BASE</code>.
+          </p>
+        </div>
       )}
 
       {/* KPI Grid */}
@@ -114,23 +111,23 @@ export default function Dashboard() {
       {/* Recent Activity */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Recent Blocks */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Box className="h-4 w-4" />
+        <div className="ippan-card">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h3 className="text-sm font-medium flex items-center gap-2">
+              <Box className="h-4 w-4 text-muted-foreground" />
               Recent Blocks
-            </CardTitle>
+            </h3>
             <Link href="/blocks" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               View all →
             </Link>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-4">
             {blocksError && (
               <p className="text-xs text-amber-600 mb-2">
                 Blocks list unavailable — API may not expose this endpoint yet.
               </p>
             )}
-            <div className="divide-y">
+            <div className="divide-y divide-border">
               {blocksLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="flex items-center justify-between py-2">
@@ -147,7 +144,7 @@ export default function Dashboard() {
                   <Link
                     key={block.block_id}
                     href={`/blocks/${block.block_id}`}
-                    className="flex items-center justify-between py-2 hover:bg-muted/50 -mx-2 px-2 rounded transition-colors"
+                    className="flex items-center justify-between py-2 hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <code className="text-xs font-mono">{truncateId(block.block_id)}</code>
@@ -164,27 +161,27 @@ export default function Dashboard() {
                 ))
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Recent Transactions */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4" />
+        <div className="ippan-card">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h3 className="text-sm font-medium flex items-center gap-2">
+              <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
               Recent Transactions
-            </CardTitle>
+            </h3>
             <Link href="/tx" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               View all →
             </Link>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-4">
             {txError && (
               <p className="text-xs text-amber-600 mb-2">
                 Transactions list unavailable — API may not expose this endpoint yet.
               </p>
             )}
-            <div className="divide-y">
+            <div className="divide-y divide-border">
               {txLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="flex items-center justify-between py-2">
@@ -201,7 +198,7 @@ export default function Dashboard() {
                   <Link
                     key={tx.tx_id}
                     href={`/tx/${tx.tx_id}`}
-                    className="flex items-center justify-between py-2 hover:bg-muted/50 -mx-2 px-2 rounded transition-colors"
+                    className="flex items-center justify-between py-2 hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
                   >
                     <code className="text-xs font-mono">{truncateId(tx.tx_id)}</code>
                     <Badge 
@@ -214,8 +211,8 @@ export default function Dashboard() {
                 ))
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

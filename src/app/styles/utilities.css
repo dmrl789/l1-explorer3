@@ -1,0 +1,26 @@
+@reference "../globals.css";
+
+@layer components {
+  /* Card styles for consistent UI */
+  .ippan-card {
+    @apply rounded-2xl border border-border bg-card shadow-sm;
+  }
+  
+  .ippan-kpi {
+    @apply rounded-2xl border border-border bg-card shadow-sm p-4;
+  }
+  
+  /* Typography utilities */
+  .ippan-title {
+    @apply text-2xl font-semibold tracking-tight text-foreground;
+  }
+  
+  .ippan-subtitle {
+    @apply text-sm text-muted-foreground;
+  }
+  
+  /* Panel styles */
+  .ippan-panel {
+    @apply rounded-2xl border border-border bg-card shadow-sm p-4;
+  }
+}
