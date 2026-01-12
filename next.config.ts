@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Output standalone for Vercel
-  output: 'standalone',
-  // Skip type checking in CI (will be done separately)
+  // TypeScript checking enabled
   typescript: {
     ignoreBuildErrors: false,
   },
