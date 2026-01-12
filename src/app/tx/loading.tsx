@@ -1,0 +1,22 @@
+import { TableSkeleton } from '@/components/skeletons';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+
+export default function Loading() {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-40" />
+        </CardHeader>
+        <CardContent>
+          <TableSkeleton rows={10} columns={6} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
