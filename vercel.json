@@ -1,3 +1,7 @@
 {
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "rewrites": [
+    { "source": "/rpc1/:path*", "destination": "http://api1.ippan.uk:8080/:path*" },
+    { "source": "/rpc2/:path*", "destination": "http://api2.ippan.uk:8080/:path*" }
+  ]
 }
