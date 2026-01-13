@@ -1,43 +1,38 @@
 'use client';
 
-import { useStatus } from '@/lib/hooks';
-
 export function Footer() {
-  const { status } = useStatus();
-
   return (
-    <footer className="border-t border-slate-700/50 bg-[#1a2332]/80">
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400">
-          <div className="flex items-center gap-3">
-            <span className="font-medium text-slate-200">IPPAN L1 Explorer</span>
-            <span className="text-slate-600">·</span>
-            <span className="text-slate-500">DevNet</span>
+    <footer className="border-t border-slate-700/30 bg-[#151c28]">
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 lg:px-8">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex items-center gap-2">
+            <div className="grid h-6 w-6 place-items-center rounded bg-purple-500/20 text-purple-400 font-semibold text-xs">
+              AI
+            </div>
+            <span className="font-medium text-slate-200">IPPAN Explorer</span>
           </div>
           
-          <div className="flex items-center gap-3 text-xs">
-            {status?.version && (
-              <>
-                <span className="text-slate-500">v{status.version}</span>
-                <span className="text-slate-700">·</span>
-              </>
-            )}
-            {status?.commit && (
-              <>
-                <span className="font-mono text-slate-500">
-                  {status.commit.slice(0, 7)}
-                </span>
-                <span className="text-slate-700">·</span>
-              </>
-            )}
+          <p className="text-sm text-slate-500 max-w-md">
+            L1 DevNet Explorer — HashTimer™ ordering, IPPAN Time, deterministic finality.
+          </p>
+          
+          <div className="flex items-center gap-4 text-xs text-slate-500">
             <a 
-              href="https://ippan.uk" 
+              href="https://ippan.net" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-emerald-400 hover:text-emerald-300 transition-colors"
             >
-              ippan.uk
+              ippan.net
             </a>
+            <span className="text-slate-700">·</span>
+            <span>DevNet</span>
+          </div>
+          
+          <div className="pt-4 border-t border-slate-700/30 w-full">
+            <p className="text-xs text-slate-600">
+              © 2026 IPPAN. All rights reserved.
+            </p>
           </div>
         </div>
       </div>

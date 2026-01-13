@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "IPPAN L1 Explorer | DevNet",
+  title: "IPPAN Explorer | DevNet",
   description: "IPPAN L1 DevNet Explorer - HashTimer ordering, IPPAN Time, deterministic finality",
   keywords: ["IPPAN", "L1", "blockchain", "explorer", "DevNet", "HashTimer"],
 };
@@ -30,10 +30,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} bg-[#1a2332] text-slate-100 antialiased`}>
-        <div className="min-h-screen bg-[#1a2332]">
+      <body className={`${inter.variable} bg-[#131a24] text-slate-100 antialiased font-sans`}>
+        <div className="min-h-screen bg-gradient-to-b from-[#131a24] via-[#151c28] to-[#131a24]">
           <TopNav />
-          <main className="mx-auto w-full max-w-7xl px-4 pb-24 pt-6 lg:pb-10 lg:px-8">
+          <main className="mx-auto w-full max-w-7xl px-4 pb-28 pt-8 lg:pb-12 lg:px-8">
             {children}
           </main>
           <Footer />

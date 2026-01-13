@@ -39,27 +39,30 @@ export default function Dashboard() {
   const verifiers = status?.shadow_verifiers;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="ippan-title">DevNet Dashboard</h1>
-          <p className="ippan-subtitle mt-1">
-            L1-only explorer focused on deterministic primitives: HashTimer™ ordering, IPPAN Time, round finality.
+          <h1 className="text-3xl font-bold tracking-tight text-slate-100">
+            DevNet Dashboard
+          </h1>
+          <p className="text-slate-400 mt-2 max-w-2xl">
+            L1 Explorer focused on deterministic primitives: HashTimer™ ordering, IPPAN Time, and round finality.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">
-            API: <code className="ml-1 font-mono">{process.env.NEXT_PUBLIC_IPPAN_API_BASE ?? "not set"}</code>
+          <Badge variant="outline" className="text-xs px-3 py-1">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
+            Live
           </Badge>
         </div>
       </div>
 
       {/* Error Banner */}
       {statusError && (
-        <div className="ippan-card border-destructive/50 bg-destructive/10 p-4">
-          <p className="text-sm text-destructive">
-            Failed to load <code>/status</code>. Check Vercel env var <code>NEXT_PUBLIC_IPPAN_API_BASE</code>.
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <p className="text-sm text-amber-300">
+            Unable to connect to the network. Please check your connection.
           </p>
         </div>
       )}
@@ -69,92 +72,94 @@ export default function Dashboard() {
         <KpiCard
           title="Network Health"
           value={healthLabel}
-          subtitle="polled every ~3s"
+          subtitle="Real-time status"
           icon={<Activity className="h-4 w-4" />}
           loading={statusLoading}
         />
         <KpiCard
-          title="IPPAN Time (authoritative)"
+          title="IPPAN Time"
           value={ippanTime !== undefined ? String(ippanTime) : "—"}
-          subtitle={`monotonic: ${monotonic !== undefined ? String(monotonic) : "—"} · drift: ${fmt(driftMs)}ms`}
+          subtitle={`Monotonic: ${monotonic !== undefined ? String(monotonic) : "—"} · Drift: ${fmt(driftMs)}ms`}
           icon={<Clock className="h-4 w-4" />}
           loading={statusLoading}
         />
         <KpiCard
-          title="Finality (ms)"
-          value={p95 !== undefined ? `p95 ${fmt(p95)}` : "—"}
-          subtitle={`p50 ${fmt(p50)} · p99 ${fmt(p99)}`}
+          title="Finality"
+          value={p95 !== undefined ? `${fmt(p95)}ms` : "—"}
+          subtitle={`p50: ${fmt(p50)}ms · p99: ${fmt(p99)}ms`}
           icon={<Zap className="h-4 w-4" />}
           loading={statusLoading}
         />
         <KpiCard
-          title="Throughput (Accepted TPS)"
+          title="Accepted TPS"
           value={fmt(acceptedTps)}
-          subtitle="ingress accepted"
+          subtitle="Transactions per second"
           loading={statusLoading}
         />
         <KpiCard
-          title="Throughput (Finalized TPS)"
+          title="Finalized TPS"
           value={fmt(finalizedTps)}
-          subtitle="finality confirmed"
+          subtitle="Confirmed transactions"
           loading={statusLoading}
         />
         <KpiCard
-          title="Validators (active)"
+          title="Active Validators"
           value={fmt(validators)}
-          subtitle={verifiers ? `${fmt(verifiers)} shadow verifiers` : "shadow verifiers when exposed"}
+          subtitle={verifiers ? `${fmt(verifiers)} verifiers` : "Network consensus"}
           icon={<Users className="h-4 w-4" />}
           loading={statusLoading}
         />
       </KpiGrid>
 
       {/* Recent Activity */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Blocks */}
-        <div className="ippan-card">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <h3 className="text-sm font-medium flex items-center gap-2">
-              <Box className="h-4 w-4 text-muted-foreground" />
+        <div className="rounded-xl border border-slate-700/50 bg-[#1e2736] overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-700/50 px-5 py-4">
+            <h3 className="font-semibold text-slate-100 flex items-center gap-2">
+              <Box className="h-4 w-4 text-purple-400" />
               Recent Blocks
             </h3>
-            <Link href="/blocks" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/blocks" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium">
               View all →
             </Link>
           </div>
-          <div className="p-4">
+          <div className="p-5">
             {blocksError && (
-              <p className="text-xs text-amber-600 mb-2">
-                Blocks list unavailable — API may not expose this endpoint yet.
+              <p className="text-xs text-amber-400 mb-3 px-3 py-2 bg-amber-500/10 rounded-lg">
+                Blocks data temporarily unavailable
               </p>
             )}
-            <div className="divide-y divide-border">
+            <div className="space-y-1">
               {blocksLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between py-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-4 w-12" />
+                  <div key={i} className="flex items-center justify-between py-3 px-3">
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-4 w-14" />
                   </div>
                 ))
               ) : blocks.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-4 text-center">
+                <p className="text-sm text-slate-500 py-8 text-center">
                   No blocks available
                 </p>
               ) : (
-                blocks.slice(0, 8).map((block) => (
+                blocks.slice(0, 6).map((block) => (
                   <Link
                     key={block.block_id}
                     href={`/blocks/${block.block_id}`}
-                    className="flex items-center justify-between py-2 hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
+                    className="flex items-center justify-between py-3 px-3 hover:bg-slate-700/30 rounded-lg transition-colors group"
                   >
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs font-mono">{truncateId(block.block_id)}</code>
+                    <div className="flex items-center gap-3">
+                      <code className="text-sm font-mono text-slate-300 group-hover:text-emerald-300 transition-colors">
+                        {truncateId(block.block_id)}
+                      </code>
                       {block.finalized && (
-                        <Badge variant="secondary" className="text-[10px] px-1 py-0">
-                          final
+                        <Badge variant="success" className="text-[10px] px-2">
+                          Finalized
                         </Badge>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-sm text-slate-500">
                       {block.tx_count} tx
                     </span>
                   </Link>
@@ -165,47 +170,49 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Transactions */}
-        <div className="ippan-card">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <h3 className="text-sm font-medium flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+        <div className="rounded-xl border border-slate-700/50 bg-[#1e2736] overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-700/50 px-5 py-4">
+            <h3 className="font-semibold text-slate-100 flex items-center gap-2">
+              <ArrowRightLeft className="h-4 w-4 text-emerald-400" />
               Recent Transactions
             </h3>
-            <Link href="/tx" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/tx" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium">
               View all →
             </Link>
           </div>
-          <div className="p-4">
+          <div className="p-5">
             {txError && (
-              <p className="text-xs text-amber-600 mb-2">
-                Transactions list unavailable — API may not expose this endpoint yet.
+              <p className="text-xs text-amber-400 mb-3 px-3 py-2 bg-amber-500/10 rounded-lg">
+                Transaction data temporarily unavailable
               </p>
             )}
-            <div className="divide-y divide-border">
+            <div className="space-y-1">
               {txLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between py-2">
-                    <Skeleton className="h-4 w-32" />
+                  <div key={i} className="flex items-center justify-between py-3 px-3">
+                    <Skeleton className="h-4 w-36" />
                     <Skeleton className="h-4 w-16" />
                   </div>
                 ))
               ) : transactions.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-4 text-center">
+                <p className="text-sm text-slate-500 py-8 text-center">
                   No transactions available
                 </p>
               ) : (
-                transactions.slice(0, 8).map((tx) => (
+                transactions.slice(0, 6).map((tx) => (
                   <Link
                     key={tx.tx_id}
                     href={`/tx/${tx.tx_id}`}
-                    className="flex items-center justify-between py-2 hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
+                    className="flex items-center justify-between py-3 px-3 hover:bg-slate-700/30 rounded-lg transition-colors group"
                   >
-                    <code className="text-xs font-mono">{truncateId(tx.tx_id)}</code>
+                    <code className="text-sm font-mono text-slate-300 group-hover:text-emerald-300 transition-colors">
+                      {truncateId(tx.tx_id)}
+                    </code>
                     <Badge 
-                      variant={tx.finalized ? "default" : "secondary"}
+                      variant={tx.finalized ? "success" : "secondary"}
                       className="text-[10px]"
                     >
-                      {tx.finalized ? "finalized" : tx.type || "pending"}
+                      {tx.finalized ? "Finalized" : tx.type || "Pending"}
                     </Badge>
                   </Link>
                 ))
