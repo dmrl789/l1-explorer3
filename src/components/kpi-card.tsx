@@ -1,7 +1,6 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
@@ -31,53 +30,55 @@ export function KpiCard({
 }: KpiCardProps) {
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
   const trendColor = trend === 'up' 
-    ? 'text-green-600' 
+    ? 'text-emerald-400' 
     : trend === 'down' 
-      ? 'text-red-600' 
-      : 'text-muted-foreground';
+      ? 'text-red-400' 
+      : 'text-slate-500';
 
   return (
-    <Card className={cn('relative overflow-hidden', className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+    <div className={cn(
+      'rounded-xl border border-slate-800/70 bg-slate-950/50 p-4 relative overflow-hidden',
+      className
+    )}>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs uppercase tracking-wide text-slate-500">
           {title}
-        </CardTitle>
+        </p>
         {icon && (
-          <div className="text-muted-foreground">
+          <div className="text-slate-500">
             {icon}
           </div>
         )}
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+      </div>
+      
+      {loading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-3/4 bg-slate-800" />
+          <Skeleton className="h-4 w-1/2 bg-slate-800" />
+        </div>
+      ) : (
+        <>
+          <div className={cn('text-2xl font-semibold text-emerald-100', valueClassName)}>
+            {value}
           </div>
-        ) : (
-          <>
-            <div className={cn('text-2xl font-bold tracking-tight', valueClassName)}>
-              {value}
+          {(subtitle || trend) && (
+            <div className="flex items-center gap-2 mt-1">
+              {trend && (
+                <span className={cn('flex items-center text-xs', trendColor)}>
+                  <TrendIcon className="h-3 w-3 mr-0.5" />
+                  {trendValue}
+                </span>
+              )}
+              {subtitle && (
+                <p className="text-xs text-slate-500">
+                  {subtitle}
+                </p>
+              )}
             </div>
-            {(subtitle || trend) && (
-              <div className="flex items-center gap-2 mt-1">
-                {trend && (
-                  <span className={cn('flex items-center text-xs', trendColor)}>
-                    <TrendIcon className="h-3 w-3 mr-0.5" />
-                    {trendValue}
-                  </span>
-                )}
-                {subtitle && (
-                  <p className="text-xs text-muted-foreground">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 

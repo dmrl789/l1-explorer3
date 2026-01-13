@@ -125,7 +125,7 @@ export function SearchBox() {
 
       {/* Dropdown */}
       {isOpen && query.trim() && (
-        <div className="absolute top-full mt-1 w-full bg-popover border rounded-md shadow-lg z-50">
+        <div className="absolute top-full mt-1 w-full bg-slate-900 border border-slate-800 rounded-lg shadow-xl z-50">
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -165,11 +165,11 @@ export function SearchBox() {
 
 function TypeBadge({ type }: { type: SearchHitType }) {
   const colors: Record<SearchHitType, string> = {
-    transaction: 'bg-blue-500/10 text-blue-600',
-    block: 'bg-purple-500/10 text-purple-600',
-    round: 'bg-green-500/10 text-green-600',
-    node: 'bg-orange-500/10 text-orange-600',
-    unknown: 'bg-gray-500/10 text-gray-600',
+    transaction: 'bg-emerald-500/20 text-emerald-300',
+    block: 'bg-purple-500/20 text-purple-300',
+    round: 'bg-sky-500/20 text-sky-300',
+    node: 'bg-amber-500/20 text-amber-300',
+    unknown: 'bg-slate-500/20 text-slate-300',
   };
 
   const labels: Record<SearchHitType, string> = {
