@@ -24,8 +24,8 @@ export function TopNav() {
       <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0 text-slate-100 hover:text-slate-100">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-500/20 text-emerald-400 font-semibold text-sm">
-            IP
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-purple-500/20 text-purple-400 font-semibold text-sm">
+            AI
           </div>
           <div className="leading-tight">
             <div className="text-sm font-semibold tracking-tight text-slate-100">IPPAN Explorer</div>
