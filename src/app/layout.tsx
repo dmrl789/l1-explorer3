@@ -30,8 +30,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} bg-slate-950 text-slate-100 antialiased`}>
-        <div className="min-h-screen bg-slate-950">
+      <body className={`${inter.variable} bg-[#1a2332] text-slate-100 antialiased`}>
+        <div className="min-h-screen bg-[#1a2332]">
           <TopNav />
           <main className="mx-auto w-full max-w-7xl px-4 pb-24 pt-6 lg:pb-10 lg:px-8">
             {children}

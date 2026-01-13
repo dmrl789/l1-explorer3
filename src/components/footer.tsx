@@ -6,7 +6,7 @@ export function Footer() {
   const { status } = useStatus();
 
   return (
-    <footer className="border-t border-slate-800 bg-slate-950/80">
+    <footer className="border-t border-slate-700/50 bg-[#1a2332]/80">
       <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400">
           <div className="flex items-center gap-3">

@@ -55,14 +55,14 @@
   color-scheme: dark;
   --radius: 0.625rem;
   
-  /* IPPAN Dark Theme — slate + emerald palette (matches ippan-explorer2) */
-  --background: hsl(222 47% 6%);           /* slate-950 */
+  /* IPPAN Dark Theme — blue-gray + emerald palette */
+  --background: hsl(222 40% 12%);          /* lighter blue-gray */
   --foreground: hsl(210 40% 96%);          /* slate-100 */
   
-  --card: hsl(222 47% 8%);                 /* slightly lighter than bg */
+  --card: hsl(222 40% 14%);                /* slightly lighter than bg */
   --card-foreground: hsl(210 40% 96%);     /* slate-100 */
   
-  --popover: hsl(222 47% 10%);             /* slate-900 */
+  --popover: hsl(222 40% 16%);             /* lighter popover */
   --popover-foreground: hsl(210 40% 96%);  /* slate-100 */
   
   /* Emerald accent — brand color */

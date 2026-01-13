@@ -20,7 +20,7 @@ export function TopNav() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-900/80 bg-slate-950/80 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-slate-700/50 bg-[#1a2332]/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0 text-slate-100 hover:text-slate-100">
@@ -87,7 +87,7 @@ function StatusIndicator() {
 
 function MobileNav({ pathname }: { pathname: string }) {
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800 bg-slate-950/95 backdrop-blur safe-area-pb">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-700/50 bg-[#1a2332]/95 backdrop-blur safe-area-pb">
       <div className="flex items-center justify-around px-2 py-2">
         {navItems.slice(0, 5).map((item) => {
           const isActive = pathname === item.href || 
