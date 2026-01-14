@@ -33,7 +33,7 @@ export default function RootLayout({
       <body className={`${inter.variable} bg-[#131a24] text-slate-100 antialiased font-sans`}>
         <div className="min-h-screen bg-gradient-to-b from-[#131a24] via-[#151c28] to-[#131a24]">
           <TopNav />
-          <main className="mx-auto w-full max-w-7xl px-4 pb-28 pt-8 lg:pb-12 lg:px-8">
+          <main className="mx-auto w-full max-w-7xl px-3 pb-24 pt-4 sm:px-4 sm:pt-6 sm:pb-28 lg:pb-12 lg:px-8 lg:pt-8">
             {children}
           </main>
           <Footer />

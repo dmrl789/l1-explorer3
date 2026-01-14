@@ -8,3 +8,4 @@ export * from './skeletons';
 export * from './error-state';
 export * from './copy-button';
 export * from './footer';
+export * from './contact-form';

@@ -90,7 +90,7 @@ export function SearchBox() {
   }, [query, hits, navigateToResult, router]);
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative w-full sm:w-auto">
       <form onSubmit={handleSubmit}>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -104,7 +104,7 @@ export function SearchBox() {
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
-            className="pl-9 pr-8 w-[200px] lg:w-[300px]"
+            className="pl-9 pr-8 w-full sm:w-[200px] lg:w-[300px] text-sm"
           />
           {query && (
             <Button
