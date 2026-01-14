@@ -14,7 +14,11 @@ interface FormData {
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
 
-export function ContactForm() {
+interface ContactFormProps {
+  showHeader?: boolean;
+}
+
+export function ContactForm({ showHeader = true }: ContactFormProps) {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -70,12 +74,14 @@ export function ContactForm() {
 
   return (
     <div className="w-full">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-slate-100">Get in Touch</h3>
-        <p className="text-sm text-slate-400 mt-1">
-          Have questions about IPPAN? We&apos;d love to hear from you.
-        </p>
-      </div>
+      {showHeader && (
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-slate-100">Get in Touch</h3>
+          <p className="text-sm text-slate-400 mt-1">
+            Have questions about IPPAN? We&apos;d love to hear from you.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
