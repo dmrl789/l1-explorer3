@@ -8,12 +8,21 @@ import {
   CheckCircle2,
   ArrowRight,
   ExternalLink,
+  Info,
 } from 'lucide-react';
 import { useStatus, useRounds, useBlocks, useTransactions } from '@/lib/hooks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { useState } from 'react';
 
 interface PrimitiveCardProps {
   title: string;
@@ -26,6 +35,8 @@ interface PrimitiveCardProps {
     value?: string;
   };
   learnMoreHref?: string;
+  learnMoreDialog?: React.ReactNode;
+  onLearnMoreClick?: () => void;
 }
 
 function PrimitiveCard({ 
@@ -35,6 +46,7 @@ function PrimitiveCard({
   features, 
   example,
   learnMoreHref,
+  onLearnMoreClick,
 }: PrimitiveCardProps) {
   return (
     <Card className="flex flex-col">
@@ -73,7 +85,13 @@ function PrimitiveCard({
               </Link>
             </Button>
           )}
-          {learnMoreHref && (
+          {onLearnMoreClick && (
+            <Button variant="outline" size="sm" onClick={onLearnMoreClick}>
+              Learn more
+              <Info className="h-3 w-3 ml-1" />
+            </Button>
+          )}
+          {learnMoreHref && !onLearnMoreClick && (
             <Button variant="outline" size="sm" asChild>
               <a href={learnMoreHref} target="_blank" rel="noopener noreferrer">
                 Learn more
@@ -87,7 +105,75 @@ function PrimitiveCard({
   );
 }
 
+function HashTimerLearnMoreDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">HashTimer™ <span className="text-sm font-normal text-muted-foreground">(patent pending)</span></DialogTitle>
+          <DialogDescription>
+            Cryptographic timestamping for deterministic transaction ordering
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 text-sm">
+          <p className="text-muted-foreground leading-relaxed">
+            <strong className="text-foreground">HashTimer™</strong> is IPPAN&apos;s cryptographic timestamping primitive that assigns every transaction a <strong className="text-foreground">unique hash-based time marker</strong> and produces a <strong className="text-foreground">single canonical ordering</strong> that every node can verify independently—reducing front-running incentives and minimizing MEV.
+          </p>
+
+          <div className="rounded-lg bg-muted/50 p-4 border">
+            <p className="font-medium text-foreground mb-2">Format (conceptual):</p>
+            <code className="block bg-background rounded px-3 py-2 font-mono text-xs">
+              HT = (IPPAN Time, TxHash, SequencingProof)
+            </code>
+            <p className="text-muted-foreground mt-2 text-xs">
+              Where <strong className="text-foreground">IPPAN Time</strong> anchors ordering, <strong className="text-foreground">TxHash</strong> binds identity, and <strong className="text-foreground">SequencingProof</strong> makes the position <strong className="text-foreground">deterministic and verifiable</strong> across the network.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-medium text-foreground mb-3">Why it matters</h4>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Unique per transaction:</strong> each transaction receives a HashTimer™ that cannot be duplicated or arbitrarily rewritten.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Deterministic &amp; verifiable ordering:</strong> nodes derive the same order from the same inputs—no subjective mempool rules.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Front-running / MEV resistance:</strong> canonical ordering removes discretionary reordering and collapses common MEV paths.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Perfect replayability:</strong> re-compute history exactly from genesis or any checkpoint, because ordering is deterministic.
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="pt-2 border-t">
+            <p className="text-muted-foreground italic">
+              <strong className="text-foreground not-italic">In short:</strong> HashTimer™ makes ordering a cryptographic fact—fair, auditable, and reproducible.
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function PrimitivesPage() {
+  const [hashTimerDialogOpen, setHashTimerDialogOpen] = useState(false);
   const { status, isLoading: statusLoading } = useStatus();
   const { rounds } = useRounds(1);
   const { blocks } = useBlocks(1);
@@ -157,7 +243,11 @@ export default function PrimitivesPage() {
               value: latestTx.tx_id.slice(0, 8) + '...',
             } : undefined
           }
-          learnMoreHref="https://docs.ippan.uk/primitives/hashtimer"
+          onLearnMoreClick={() => setHashTimerDialogOpen(true)}
+        />
+        <HashTimerLearnMoreDialog 
+          open={hashTimerDialogOpen} 
+          onOpenChange={setHashTimerDialogOpen} 
         />
 
         <PrimitiveCard
