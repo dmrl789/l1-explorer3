@@ -22,19 +22,10 @@ export function Footer() {
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
           {/* Left Column - About & Navigation */}
           <div className="space-y-8">
-            {/* Logo & Description */}
+            {/* Description */}
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-lg bg-purple-500/20 text-purple-400 font-bold text-sm border border-purple-500/20">
-                  AI
-                </div>
-                <div className="leading-tight">
-                  <div className="text-base font-semibold tracking-tight text-slate-100">IPPAN Explorer</div>
-                  <div className="text-[11px] text-slate-500 font-medium">DevNet</div>
-                </div>
-              </div>
               <p className="text-sm text-slate-400 max-w-md leading-relaxed">
-                L1 DevNet Explorer — HashTimer™ ordering, IPPAN Time, and deterministic finality. 
+                L1 Explorer — HashTimer™ ordering, IPPAN Time, and deterministic finality.
                 Experience institutional-grade blockchain infrastructure with complete transparency.
               </p>
             </div>
@@ -73,25 +64,20 @@ export function Footer() {
           </div>
 
           {/* Right Column - Contact Form */}
-          <div className="lg:pl-8 lg:border-l lg:border-slate-700/30">
+          <div id="contact" className="lg:pl-8 lg:border-l lg:border-slate-700/30">
             <ContactForm />
           </div>
         </div>
 
         {/* Bottom Bar */}
         <div className="mt-10 pt-8 border-t border-slate-700/30">
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-            <p className="text-xs text-slate-500">
-              © 2026 IPPAN. All rights reserved.
+          <div className="flex flex-col items-center gap-2 text-xs text-slate-500 sm:flex-row sm:justify-between">
+            <p>
+              © 2026 IPPAN - All Rights Reserved.
             </p>
-            <div className="flex items-center gap-4 text-xs text-slate-500">
-              <span>Powered by HashTimer™</span>
-              <span className="text-slate-700">·</span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Network Live
-              </span>
-            </div>
+            <Link href="#contact" className="hover:text-emerald-400 transition-colors">
+              Contact
+            </Link>
           </div>
         </div>
       </div>
