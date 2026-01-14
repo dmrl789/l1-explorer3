@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { SearchBox } from './search-box';
 
@@ -21,14 +22,16 @@ export function TopNav() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-700/30 bg-[#151c28]/95 backdrop-blur-md">
-      <div className="mx-auto flex w-full max-w-7xl items-center gap-3 sm:gap-6 px-3 py-3 sm:px-4 sm:py-4 lg:px-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-3 sm:gap-6 px-3 py-3 sm:px-4 sm:py-4 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0 text-slate-100 hover:text-slate-100">
           <div className="grid h-8 w-8 sm:h-9 sm:w-9 place-items-center rounded-lg bg-purple-500/20 text-purple-400 font-bold text-xs sm:text-sm border border-purple-500/20">
             AI
           </div>
-          <div className="leading-tight hidden xs:block sm:block">
-            <div className="text-sm sm:text-base font-semibold tracking-tight text-slate-100">IPPAN Explorer</div>
+          <div className="leading-tight">
+            <div className="text-sm sm:text-base font-semibold tracking-tight text-slate-100 max-w-[140px] sm:max-w-none truncate">
+              IPPAN Explorer
+            </div>
             <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium">DevNet</div>
           </div>
         </Link>
@@ -57,11 +60,11 @@ export function TopNav() {
         </nav>
 
         {/* Right side: Search + Status */}
-        <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+        <div className="flex w-full sm:w-auto items-center justify-end gap-2 sm:gap-3 sm:ml-auto">
           <div className="hidden sm:block">
             <SearchBox />
           </div>
-          <StatusIndicator />
+          <StatusIndicator className="hidden sm:flex" />
         </div>
       </div>
       
@@ -76,9 +79,9 @@ export function TopNav() {
   );
 }
 
-function StatusIndicator() {
+function StatusIndicator({ className }: { className?: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-2 text-xs">
+    <div className={cn("flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-2 text-xs", className)}>
       <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
       <span className="text-slate-300 font-medium">Live</span>
     </div>
@@ -86,10 +89,12 @@ function StatusIndicator() {
 }
 
 function MobileNav({ pathname }: { pathname: string }) {
+  const primaryItems = navItems.filter((item) => item.href !== '/');
+
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-700/30 bg-[#151c28]/98 backdrop-blur-md safe-area-pb">
       <div className="flex items-center justify-around px-1 py-2 sm:px-2 sm:py-3">
-        {navItems.slice(0, 5).map((item) => {
+        {primaryItems.slice(0, 4).map((item) => {
           const isActive = pathname === item.href || 
             (item.href !== '/' && pathname.startsWith(item.href));
           
@@ -108,22 +113,61 @@ function MobileNav({ pathname }: { pathname: string }) {
             </Link>
           );
         })}
-        <MobileMoreMenu items={navItems.slice(5)} pathname={pathname} />
+        <MobileMoreMenu items={primaryItems.slice(4)} pathname={pathname} />
       </div>
     </nav>
   );
 }
 
 function MobileMoreMenu({ items, pathname }: { items: typeof navItems; pathname: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      const target = event.target as Node;
+      if (!menuRef.current.contains(target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isOpen]);
+
   return (
-    <div className="relative group">
-      <button className="flex flex-col items-center gap-0.5 px-2 py-1.5 sm:px-3 rounded-lg text-slate-500 hover:text-slate-300 active:bg-slate-700/30 min-w-[48px]">
+    <div className="relative" ref={menuRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={cn(
+          "flex flex-col items-center gap-0.5 px-2 py-1.5 sm:px-3 rounded-lg min-w-[48px] transition-colors",
+          isOpen
+            ? "text-emerald-400 bg-emerald-500/10"
+            : "text-slate-500 hover:text-slate-300 active:bg-slate-700/30"
+        )}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-label="More navigation links"
+      >
         <span className="text-base sm:text-lg">⋯</span>
         <span className="text-[10px] sm:text-[11px] font-medium">More</span>
       </button>
       
       {/* Popup menu */}
-      <div className="absolute bottom-full right-0 mb-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all">
+      <div
+        className={cn(
+          "absolute bottom-full right-0 mb-2 transition-all",
+          isOpen ? "opacity-100 visible" : "opacity-0 invisible"
+        )}
+      >
         <div className="rounded-xl border border-slate-700/50 bg-[#1e2736] shadow-2xl p-2 min-w-[140px] sm:min-w-[160px]">
           {items.map((item) => {
             const isActive = pathname === item.href || 
