@@ -15,25 +15,10 @@ export function Footer() {
   return (
     <footer className="border-t border-slate-700/30 bg-[#151c28]">
       <div className="mx-auto w-full max-w-7xl px-4 py-10 lg:px-8 lg:py-12">
-        <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-between sm:gap-4">
-          <div className="flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-lg border border-purple-500/20 bg-purple-500/20 text-sm font-bold text-purple-400">
-              AI
-            </div>
-            <div className="leading-tight">
-              <div className="text-base font-semibold tracking-tight text-slate-100">IPPAN Explorer</div>
-              <div className="text-[11px] font-medium text-slate-500">DevNet</div>
-            </div>
-          </div>
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
           <p className="text-xs text-slate-500">
-            © 2026 IPPAN. All rights reserved.
+            © 2026 IPPAN - All Rights Reserved.
           </p>
-          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-            <span className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Network Live
-            </span>
-          </div>
           <Dialog>
             <DialogTrigger asChild>
               <Button
