@@ -8,12 +8,21 @@ import {
   CheckCircle2,
   ArrowRight,
   ExternalLink,
+  Info,
 } from 'lucide-react';
 import { useStatus, useRounds, useBlocks, useTransactions } from '@/lib/hooks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { useState } from 'react';
 
 interface PrimitiveCardProps {
   title: string;
@@ -26,6 +35,8 @@ interface PrimitiveCardProps {
     value?: string;
   };
   learnMoreHref?: string;
+  learnMoreDialog?: React.ReactNode;
+  onLearnMoreClick?: () => void;
 }
 
 function PrimitiveCard({ 
@@ -35,6 +46,7 @@ function PrimitiveCard({
   features, 
   example,
   learnMoreHref,
+  onLearnMoreClick,
 }: PrimitiveCardProps) {
   return (
     <Card className="flex flex-col">
@@ -73,7 +85,13 @@ function PrimitiveCard({
               </Link>
             </Button>
           )}
-          {learnMoreHref && (
+          {onLearnMoreClick && (
+            <Button variant="outline" size="sm" onClick={onLearnMoreClick}>
+              Learn more
+              <Info className="h-3 w-3 ml-1" />
+            </Button>
+          )}
+          {learnMoreHref && !onLearnMoreClick && (
             <Button variant="outline" size="sm" asChild>
               <a href={learnMoreHref} target="_blank" rel="noopener noreferrer">
                 Learn more
@@ -87,7 +105,283 @@ function PrimitiveCard({
   );
 }
 
+function HashTimerLearnMoreDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">HashTimer™ <span className="text-sm font-normal text-muted-foreground">(patent pending)</span></DialogTitle>
+          <DialogDescription>
+            Cryptographic timestamping for deterministic transaction ordering
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 text-sm">
+          <p className="text-muted-foreground leading-relaxed">
+            <strong className="text-foreground">HashTimer™</strong> is IPPAN&apos;s cryptographic timestamping primitive that assigns every transaction a <strong className="text-foreground">unique hash-based time marker</strong> and produces a <strong className="text-foreground">single canonical ordering</strong> that every node can verify independently—reducing front-running incentives and minimizing MEV.
+          </p>
+
+          <div className="rounded-lg bg-muted/50 p-4 border">
+            <p className="font-medium text-foreground mb-2">Format (conceptual):</p>
+            <code className="block bg-background rounded px-3 py-2 font-mono text-xs">
+              HT = (IPPAN Time, TxHash, SequencingProof)
+            </code>
+            <p className="text-muted-foreground mt-2 text-xs">
+              Where <strong className="text-foreground">IPPAN Time</strong> anchors ordering, <strong className="text-foreground">TxHash</strong> binds identity, and <strong className="text-foreground">SequencingProof</strong> makes the position <strong className="text-foreground">deterministic and verifiable</strong> across the network.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-medium text-foreground mb-3">Why it matters</h4>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Unique per transaction:</strong> each transaction receives a HashTimer™ that cannot be duplicated or arbitrarily rewritten.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Deterministic &amp; verifiable ordering:</strong> nodes derive the same order from the same inputs—no subjective mempool rules.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Front-running / MEV resistance:</strong> canonical ordering removes discretionary reordering and collapses common MEV paths.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Perfect replayability:</strong> re-compute history exactly from genesis or any checkpoint, because ordering is deterministic.
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="pt-2 border-t">
+            <p className="text-muted-foreground italic">
+              <strong className="text-foreground not-italic">In short:</strong> HashTimer™ makes ordering a cryptographic fact—fair, auditable, and reproducible.
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function IppanTimeLearnMoreDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">IPPAN Time</DialogTitle>
+          <DialogDescription>
+            Monotonically increasing logical clock for consistent network timing
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 text-sm">
+          <p className="text-muted-foreground leading-relaxed">
+            <strong className="text-foreground">IPPAN Time</strong> is IPPAN&apos;s <strong className="text-foreground">monotonically increasing logical clock</strong> used as a shared timing reference for the network. It provides a consistent notion of &quot;before/after&quot; across participants, even when physical clocks differ, and it is used as the primary time dimension for deterministic execution and auditability.
+          </p>
+
+          <div className="rounded-lg bg-muted/50 p-4 border">
+            <p className="font-medium text-foreground mb-2">Format (conceptual):</p>
+            <code className="block bg-background rounded px-3 py-2 font-mono text-xs">
+              Tᵢ = (logical_time, drift_signal, source_set)
+            </code>
+            <p className="text-muted-foreground mt-2 text-xs">
+              Where <strong className="text-foreground">logical_time</strong> never goes backward, <strong className="text-foreground">drift_signal</strong> detects deviations vs wall-clock, and <strong className="text-foreground">source_set</strong> summarizes the participating time sources.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-medium text-foreground mb-3">Why it matters</h4>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Monotonic by design:</strong> always increasing—no time reversal edge cases.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Drift awareness:</strong> detects when local clocks diverge from expected bounds.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Deterministic state transitions:</strong> consistent time input for ordering and execution.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Auditable time semantics:</strong> makes timeline reconstruction reliable across nodes.
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="pt-2 border-t">
+            <p className="text-muted-foreground italic">
+              <strong className="text-foreground not-italic">In short:</strong> IPPAN Time turns &quot;network time&quot; into a stable input for deterministic systems.
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeterministicOrderingLearnMoreDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">Deterministic Ordering</DialogTitle>
+          <DialogDescription>
+            One canonical transaction sequence that every node can verify
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 text-sm">
+          <p className="text-muted-foreground leading-relaxed">
+            <strong className="text-foreground">Deterministic Ordering</strong> means IPPAN L1 produces <strong className="text-foreground">one canonical transaction sequence</strong> that every node can derive and verify independently. This removes ambiguity from state replication and makes the ledger replayable: given the same history, nodes arrive at the same state without relying on &quot;who saw it first&quot; or validator discretion.
+          </p>
+
+          <div className="rounded-lg bg-muted/50 p-4 border">
+            <p className="font-medium text-foreground mb-2">Format (conceptual):</p>
+            <code className="block bg-background rounded px-3 py-2 font-mono text-xs">
+              OrderKey(tx) = (IPPAN Time, HashTimer™, tx_hash, tie_breakers)
+            </code>
+            <p className="text-muted-foreground mt-2 text-xs">
+              Nodes sort by a deterministic key and verify the resulting sequence against the same rules.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-medium text-foreground mb-3">Why it matters</h4>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Global agreement on sequence:</strong> eliminates ordering ambiguity across validators.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">No discretionary reordering:</strong> reduces incentives for mempool games and manipulation.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Parallel verification friendly:</strong> deterministic keys enable efficient validation pipelines.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Compliance + auditability:</strong> reproducible reconstruction of state at any height/round.
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="pt-2 border-t">
+            <p className="text-muted-foreground italic">
+              <strong className="text-foreground not-italic">In short:</strong> Deterministic Ordering ensures the same inputs always produce the same sequence—verifiable by any node.
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RoundsFinalityLearnMoreDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">Rounds &amp; Finality</DialogTitle>
+          <DialogDescription>
+            Fast, provable finality through round-based commitments
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 text-sm">
+          <p className="text-muted-foreground leading-relaxed">
+            IPPAN finalizes transactions in <strong className="text-foreground">rounds</strong>: bounded batches that produce a <strong className="text-foreground">provable commitment</strong> to the ordered set of transactions and the resulting state transition. A round provides a clean, auditable checkpoint—supporting fast finality, deterministic replay, and compact proofs that a specific ordering and state were accepted by the validator set.
+          </p>
+
+          <div className="rounded-lg bg-muted/50 p-4 border">
+            <p className="font-medium text-foreground mb-2">Format (conceptual):</p>
+            <code className="block bg-background rounded px-3 py-2 font-mono text-xs mb-2">
+              RoundCommit = H(round_id || ordered_tx_root || state_root || validator_set_id)
+            </code>
+            <code className="block bg-background rounded px-3 py-2 font-mono text-xs">
+              FinalityProof = ThresholdSig(RoundCommit)
+            </code>
+            <p className="text-muted-foreground mt-2 text-xs">
+              Where the commitment is hashed and finalized with a threshold signature proof.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-medium text-foreground mb-3">Why it matters</h4>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Fast finality target:</strong> rounds are designed for low-latency confirmation at scale.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Provable acceptance:</strong> threshold signatures provide compact, verifiable proofs.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Clear state checkpoints:</strong> round-based commitments simplify auditing and replay.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Defense-in-depth validation:</strong> shadow verification can cross-check round integrity.
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="pt-2 border-t">
+            <p className="text-muted-foreground italic">
+              <strong className="text-foreground not-italic">In short:</strong> Rounds provide clean finality boundaries with cryptographic proofs of acceptance.
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function PrimitivesPage() {
+  const [hashTimerDialogOpen, setHashTimerDialogOpen] = useState(false);
+  const [ippanTimeDialogOpen, setIppanTimeDialogOpen] = useState(false);
+  const [deterministicOrderingDialogOpen, setDeterministicOrderingDialogOpen] = useState(false);
+  const [roundsFinalityDialogOpen, setRoundsFinalityDialogOpen] = useState(false);
+  
   const { status, isLoading: statusLoading } = useStatus();
   const { rounds } = useRounds(1);
   const { blocks } = useBlocks(1);
@@ -157,7 +451,11 @@ export default function PrimitivesPage() {
               value: latestTx.tx_id.slice(0, 8) + '...',
             } : undefined
           }
-          learnMoreHref="https://docs.ippan.uk/primitives/hashtimer"
+          onLearnMoreClick={() => setHashTimerDialogOpen(true)}
+        />
+        <HashTimerLearnMoreDialog 
+          open={hashTimerDialogOpen} 
+          onOpenChange={setHashTimerDialogOpen} 
         />
 
         <PrimitiveCard
@@ -175,7 +473,11 @@ export default function PrimitivesPage() {
             href: '/',
             value: status?.ippan_time?.value?.toString() ?? 'Loading...',
           }}
-          learnMoreHref="https://docs.ippan.uk/primitives/ippan-time"
+          onLearnMoreClick={() => setIppanTimeDialogOpen(true)}
+        />
+        <IppanTimeLearnMoreDialog 
+          open={ippanTimeDialogOpen} 
+          onOpenChange={setIppanTimeDialogOpen} 
         />
 
         <PrimitiveCard
@@ -195,7 +497,11 @@ export default function PrimitivesPage() {
               value: latestBlock.block_id.slice(0, 8) + '...',
             } : undefined
           }
-          learnMoreHref="https://docs.ippan.uk/primitives/ordering"
+          onLearnMoreClick={() => setDeterministicOrderingDialogOpen(true)}
+        />
+        <DeterministicOrderingLearnMoreDialog 
+          open={deterministicOrderingDialogOpen} 
+          onOpenChange={setDeterministicOrderingDialogOpen} 
         />
 
         <PrimitiveCard
@@ -203,7 +509,7 @@ export default function PrimitivesPage() {
           icon={<CheckCircle2 className="h-5 w-5" />}
           description="Transaction batches are finalized in rounds, providing fast and provable finality with threshold signatures."
           features={[
-            'Sub-second finality (p95 targets)',
+            'Fast finality target (p95)',
             'Threshold signature proofs',
             'Round-based state commitments',
             'Shadow verifier validation',
@@ -215,7 +521,11 @@ export default function PrimitivesPage() {
               value: `#${latestRound.round_id}`,
             } : undefined
           }
-          learnMoreHref="https://docs.ippan.uk/primitives/rounds"
+          onLearnMoreClick={() => setRoundsFinalityDialogOpen(true)}
+        />
+        <RoundsFinalityLearnMoreDialog 
+          open={roundsFinalityDialogOpen} 
+          onOpenChange={setRoundsFinalityDialogOpen} 
         />
       </div>
 
