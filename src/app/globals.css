@@ -181,3 +181,93 @@
     @apply text-xs;
   }
 }
+
+/* Mobile-first responsive utilities */
+@layer utilities {
+  /* Text truncation with responsive widths */
+  .truncate-mobile {
+    @apply truncate max-w-[120px] sm:max-w-[180px] md:max-w-none;
+  }
+  
+  /* Responsive padding for containers */
+  .container-padding {
+    @apply px-3 sm:px-4 lg:px-8;
+  }
+  
+  /* Better touch targets for mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Stack on mobile, row on desktop */
+  .stack-mobile {
+    @apply flex flex-col gap-4 sm:flex-row sm:items-center;
+  }
+  
+  /* Hide on mobile, show on tablet+ */
+  .hide-mobile {
+    @apply hidden sm:block;
+  }
+  
+  /* Show on mobile, hide on tablet+ */
+  .show-mobile {
+    @apply block sm:hidden;
+  }
+  
+  /* Responsive text sizes */
+  .text-responsive-sm {
+    @apply text-xs sm:text-sm;
+  }
+  
+  .text-responsive-base {
+    @apply text-sm sm:text-base;
+  }
+  
+  .text-responsive-lg {
+    @apply text-lg sm:text-xl lg:text-2xl;
+  }
+  
+  .text-responsive-xl {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+}
+
+/* Mobile card adjustments */
+@media (max-width: 640px) {
+  [data-slot="card"] {
+    @apply rounded-lg;
+  }
+  
+  [data-slot="card-header"] {
+    @apply px-4 py-3;
+  }
+  
+  [data-slot="card-content"] {
+    @apply px-4 py-3;
+  }
+}
+
+/* Responsive dialog/modal adjustments */
+@media (max-width: 640px) {
+  [data-slot="dialog-content"] {
+    @apply max-w-[calc(100vw-2rem)] rounded-xl;
+  }
+}
+
+/* Better mobile table scrolling */
+.mobile-table-scroll {
+  @apply -mx-4 px-4 overflow-x-auto sm:mx-0 sm:px-0;
+}
+
+/* Responsive grid utilities */
+.responsive-grid-2 {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+}
+
+.responsive-grid-3 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.responsive-grid-4 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+}

@@ -14,7 +14,8 @@ function fmt(n: number | undefined | null): string {
 
 function truncateId(id: string, len = 16): string {
   if (!id || id.length <= len) return id || "—";
-  return `${id.slice(0, len)}…`;
+  const half = Math.floor(len / 2);
+  return `${id.slice(0, half)}…${id.slice(-half)}`;
 }
 
 export default function Dashboard() {
@@ -39,20 +40,20 @@ export default function Dashboard() {
   const verifiers = status?.shadow_verifiers;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-100">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-100">
             DevNet Dashboard
           </h1>
-          <p className="text-slate-400 mt-2 max-w-2xl">
+          <p className="text-slate-400 mt-1.5 sm:mt-2 text-sm sm:text-base max-w-2xl">
             L1 Explorer focused on deterministic primitives: HashTimer™ ordering, IPPAN Time, and round finality.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs px-3 py-1">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
+          <Badge variant="outline" className="text-xs px-2 sm:px-3 py-1">
+            <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 mr-1.5 sm:mr-2 animate-pulse" />
             Live
           </Badge>
         </div>
@@ -112,34 +113,34 @@ export default function Dashboard() {
       </KpiGrid>
 
       {/* Recent Activity */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Recent Blocks */}
-        <div className="rounded-xl border border-slate-700/50 bg-[#1e2736] overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-700/50 px-5 py-4">
-            <h3 className="font-semibold text-slate-100 flex items-center gap-2">
+        <div className="rounded-lg sm:rounded-xl border border-slate-700/50 bg-[#1e2736] overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-700/50 px-3 py-3 sm:px-5 sm:py-4">
+            <h3 className="font-semibold text-sm sm:text-base text-slate-100 flex items-center gap-2">
               <Box className="h-4 w-4 text-purple-400" />
               Recent Blocks
             </h3>
-            <Link href="/blocks" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium">
+            <Link href="/blocks" className="text-[11px] sm:text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium">
               View all →
             </Link>
           </div>
-          <div className="p-5">
+          <div className="p-3 sm:p-5">
             {blocksError && (
-              <p className="text-xs text-amber-400 mb-3 px-3 py-2 bg-amber-500/10 rounded-lg">
+              <p className="text-xs text-amber-400 mb-3 px-2 sm:px-3 py-2 bg-amber-500/10 rounded-lg">
                 Blocks data temporarily unavailable
               </p>
             )}
-            <div className="space-y-1">
+            <div className="space-y-0.5 sm:space-y-1">
               {blocksLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between py-3 px-3">
-                    <Skeleton className="h-4 w-36" />
-                    <Skeleton className="h-4 w-14" />
+                  <div key={i} className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3">
+                    <Skeleton className="h-4 w-28 sm:w-36" />
+                    <Skeleton className="h-4 w-12 sm:w-14" />
                   </div>
                 ))
               ) : blocks.length === 0 ? (
-                <p className="text-sm text-slate-500 py-8 text-center">
+                <p className="text-sm text-slate-500 py-6 sm:py-8 text-center">
                   No blocks available
                 </p>
               ) : (
@@ -147,19 +148,19 @@ export default function Dashboard() {
                   <Link
                     key={block.block_id}
                     href={`/blocks/${block.block_id}`}
-                    className="flex items-center justify-between py-3 px-3 hover:bg-slate-700/30 rounded-lg transition-colors group"
+                    className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 hover:bg-slate-700/30 active:bg-slate-700/40 rounded-lg transition-colors group"
                   >
-                    <div className="flex items-center gap-3">
-                      <code className="text-sm font-mono text-slate-300 group-hover:text-emerald-300 transition-colors">
-                        {truncateId(block.block_id)}
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <code className="text-xs sm:text-sm font-mono text-slate-300 group-hover:text-emerald-300 transition-colors truncate">
+                        {truncateId(block.block_id, 12)}
                       </code>
                       {block.finalized && (
-                        <Badge variant="success" className="text-[10px] px-2">
+                        <Badge variant="success" className="text-[9px] sm:text-[10px] px-1.5 sm:px-2 shrink-0">
                           Finalized
                         </Badge>
                       )}
                     </div>
-                    <span className="text-sm text-slate-500">
+                    <span className="text-xs sm:text-sm text-slate-500 shrink-0 ml-2">
                       {block.tx_count} tx
                     </span>
                   </Link>
@@ -170,32 +171,32 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Transactions */}
-        <div className="rounded-xl border border-slate-700/50 bg-[#1e2736] overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-700/50 px-5 py-4">
-            <h3 className="font-semibold text-slate-100 flex items-center gap-2">
+        <div className="rounded-lg sm:rounded-xl border border-slate-700/50 bg-[#1e2736] overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-700/50 px-3 py-3 sm:px-5 sm:py-4">
+            <h3 className="font-semibold text-sm sm:text-base text-slate-100 flex items-center gap-2">
               <ArrowRightLeft className="h-4 w-4 text-emerald-400" />
               Recent Transactions
             </h3>
-            <Link href="/tx" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium">
+            <Link href="/tx" className="text-[11px] sm:text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium">
               View all →
             </Link>
           </div>
-          <div className="p-5">
+          <div className="p-3 sm:p-5">
             {txError && (
-              <p className="text-xs text-amber-400 mb-3 px-3 py-2 bg-amber-500/10 rounded-lg">
+              <p className="text-xs text-amber-400 mb-3 px-2 sm:px-3 py-2 bg-amber-500/10 rounded-lg">
                 Transaction data temporarily unavailable
               </p>
             )}
-            <div className="space-y-1">
+            <div className="space-y-0.5 sm:space-y-1">
               {txLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between py-3 px-3">
-                    <Skeleton className="h-4 w-36" />
-                    <Skeleton className="h-4 w-16" />
+                  <div key={i} className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3">
+                    <Skeleton className="h-4 w-28 sm:w-36" />
+                    <Skeleton className="h-4 w-14 sm:w-16" />
                   </div>
                 ))
               ) : transactions.length === 0 ? (
-                <p className="text-sm text-slate-500 py-8 text-center">
+                <p className="text-sm text-slate-500 py-6 sm:py-8 text-center">
                   No transactions available
                 </p>
               ) : (
@@ -203,14 +204,14 @@ export default function Dashboard() {
                   <Link
                     key={tx.tx_id}
                     href={`/tx/${tx.tx_id}`}
-                    className="flex items-center justify-between py-3 px-3 hover:bg-slate-700/30 rounded-lg transition-colors group"
+                    className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 hover:bg-slate-700/30 active:bg-slate-700/40 rounded-lg transition-colors group"
                   >
-                    <code className="text-sm font-mono text-slate-300 group-hover:text-emerald-300 transition-colors">
-                      {truncateId(tx.tx_id)}
+                    <code className="text-xs sm:text-sm font-mono text-slate-300 group-hover:text-emerald-300 transition-colors truncate min-w-0">
+                      {truncateId(tx.tx_id, 12)}
                     </code>
                     <Badge 
                       variant={tx.finalized ? "success" : "secondary"}
-                      className="text-[10px]"
+                      className="text-[9px] sm:text-[10px] shrink-0 ml-2"
                     >
                       {tx.finalized ? "Finalized" : tx.type || "Pending"}
                     </Badge>

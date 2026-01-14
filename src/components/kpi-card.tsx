@@ -37,44 +37,44 @@ export function KpiCard({
 
   return (
     <div className={cn(
-      'rounded-xl border border-slate-700/50 bg-[#1e2736] p-5 relative overflow-hidden transition-all hover:border-slate-600/50',
+      'rounded-lg sm:rounded-xl border border-slate-700/50 bg-[#1e2736] p-3 sm:p-5 relative overflow-hidden transition-all hover:border-slate-600/50',
       className
     )}>
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-700/5 to-transparent pointer-events-none" />
       
       <div className="relative">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs uppercase tracking-wider text-slate-500 font-medium">
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <p className="text-[10px] sm:text-xs uppercase tracking-wider text-slate-500 font-medium">
             {title}
           </p>
           {icon && (
-            <div className="text-slate-500">
+            <div className="text-slate-500 [&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-4 sm:[&>svg]:w-4">
               {icon}
             </div>
           )}
         </div>
         
         {loading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-8 w-3/4 bg-slate-700/50" />
-            <Skeleton className="h-4 w-1/2 bg-slate-700/50" />
+          <div className="space-y-2 sm:space-y-3">
+            <Skeleton className="h-6 sm:h-8 w-3/4 bg-slate-700/50" />
+            <Skeleton className="h-3 sm:h-4 w-1/2 bg-slate-700/50" />
           </div>
         ) : (
           <>
-            <div className={cn('text-2xl font-bold text-slate-100', valueClassName)}>
+            <div className={cn('text-lg sm:text-2xl font-bold text-slate-100', valueClassName)}>
               {value}
             </div>
             {(subtitle || trend) && (
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
                 {trend && (
-                  <span className={cn('flex items-center text-xs font-medium', trendColor)}>
-                    <TrendIcon className="h-3 w-3 mr-0.5" />
+                  <span className={cn('flex items-center text-[10px] sm:text-xs font-medium', trendColor)}>
+                    <TrendIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
                     {trendValue}
                   </span>
                 )}
                 {subtitle && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-[10px] sm:text-xs text-slate-500">
                     {subtitle}
                   </p>
                 )}
@@ -95,14 +95,14 @@ interface KpiGridProps {
 
 export function KpiGrid({ children, columns = 4, className }: KpiGridProps) {
   const gridCols = {
-    2: 'grid-cols-1 sm:grid-cols-2',
-    3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
-    5: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+    2: 'grid-cols-2 sm:grid-cols-2',
+    3: 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3',
+    4: 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-4',
+    5: 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
   };
 
   return (
-    <div className={cn('grid gap-4', gridCols[columns], className)}>
+    <div className={cn('grid gap-3 sm:gap-4', gridCols[columns], className)}>
       {children}
     </div>
   );
