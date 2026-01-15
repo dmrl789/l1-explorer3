@@ -51,6 +51,10 @@ async function fetchWithTimeout<T>(
     const response = await fetch(url, {
       method,
       signal: combinedSignal,
+      // Always fetch "live" data for explorer dashboards.
+      // In the browser this avoids HTTP cache reuse; in Next.js it also prevents
+      // request memoization/caching behaviors from making the UI look "stuck".
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
