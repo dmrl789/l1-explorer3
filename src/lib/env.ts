@@ -28,9 +28,9 @@ export function getApiBases(): string[] {
     }
   }
   
-  // Default for local development
+  // Defaults (mainly for SSR/tools). Prefer a "fast" upstream, with a safe fallback.
   if (bases.length === 0) {
-    // Prefer the known-good HTTP endpoint if no env vars are set (mainly for SSR/tools).
+    bases.push('http://api2.ippan.uk');
     bases.push('http://api1.ippan.uk');
   }
   

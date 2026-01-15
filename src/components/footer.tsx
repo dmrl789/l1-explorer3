@@ -10,15 +10,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
+import { getApiBase } from '@/lib/env';
 
 export function Footer() {
+  const apiBase = getApiBase();
+  const upstream =
+    process.env.NEXT_PUBLIC_UPSTREAM_RPC_BASE ??
+    process.env.UPSTREAM_RPC_BASE ??
+    'http://api2.ippan.uk';
+
   return (
     <footer className="border-t border-slate-700/30 bg-[#151c28]">
       <div className="mx-auto w-full max-w-7xl px-4 py-10 lg:px-8 lg:py-12">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-          <p className="text-xs text-slate-500">
-            © 2026 IPPAN - All Rights Reserved.
-          </p>
+          <div className="text-center sm:text-left">
+            <p className="text-xs text-slate-500">© 2026 IPPAN - All Rights Reserved.</p>
+            <p className="mt-1 text-[11px] text-slate-600">
+              API base: <code className="font-mono">{apiBase === '' ? '(same-origin)' : apiBase}</code>
+              {' · '}
+              upstream: <code className="font-mono">{upstream}</code>
+            </p>
+          </div>
           <Dialog>
             <DialogTrigger asChild>
               <Button
