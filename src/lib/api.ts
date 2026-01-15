@@ -80,31 +80,8 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 // ============================================================================
 
 export async function getStatus(): Promise<Status> {
-  try {
-    const { data } = await fetchWithCompatibility<unknown>(
-      '/v1/status',
-      '/status'
-    );
-    return normalizeStatus(data);
-  } catch (error) {
-    // Return a minimal status object if API is completely unreachable
-    if (error instanceof ApiRequestError) {
-      return {
-        network_name: 'IPPAN DevNet',
-        chain_type: 'L1',
-        health: 'unhealthy',
-        deterministic_ordering: true,
-        hashtimer_ordering: 'canonical',
-        replay_status: 'unavailable',
-        accepted_tps: 0,
-        finalized_tps: 0,
-        active_validators: 0,
-        shadow_verifiers: 0,
-        total_nodes: 0,
-      };
-    }
-    throw error;
-  }
+  const { data } = await fetchWithCompatibility<unknown>('/v1/status', '/status');
+  return normalizeStatus(data);
 }
 
 // ============================================================================
@@ -182,25 +159,15 @@ export async function listBlocks(params: PaginationParams = {}): Promise<BlocksL
     cursor: params.cursor,
   });
   
-  try {
-    const { data } = await fetchWithCompatibility<unknown>(
-      `/v1/blocks${query}`,
-      `/blocks${query}`
-    );
-    const result = normalizeBlocksList(data);
-    
-    // If empty, mark as potentially having fallback issues
-    if (result.blocks.length === 0) {
-      return { ...result, _empty_warning: true } as BlocksListResponse & { _empty_warning?: boolean };
-    }
-    
-    return result;
-  } catch (error) {
-    if (error instanceof ApiRequestError) {
-      return { blocks: [], has_more: false };
-    }
-    throw error;
+  const { data } = await fetchWithCompatibility<unknown>(`/v1/blocks${query}`, `/blocks${query}`);
+  const result = normalizeBlocksList(data);
+
+  // If empty, mark as potentially having fallback issues
+  if (result.blocks.length === 0) {
+    return { ...result, _empty_warning: true } as BlocksListResponse & { _empty_warning?: boolean };
   }
+
+  return result;
 }
 
 export async function getBlock(blockId: string): Promise<BlockDetail | null> {
@@ -228,18 +195,11 @@ export async function listTx(params: PaginationParams = {}): Promise<TxListRespo
     cursor: params.cursor,
   });
   
-  try {
-    const { data } = await fetchWithCompatibility<unknown>(
-      `/v1/transactions${query}`,
-      `/tx${query}`
-    );
-    return normalizeTxList(data);
-  } catch (error) {
-    if (error instanceof ApiRequestError) {
-      return { transactions: [], has_more: false };
-    }
-    throw error;
-  }
+  const { data } = await fetchWithCompatibility<unknown>(
+    `/v1/transactions${query}`,
+    `/tx${query}`
+  );
+  return normalizeTxList(data);
 }
 
 export async function getTx(txId: string): Promise<TxDetail | null> {
