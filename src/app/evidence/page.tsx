@@ -261,6 +261,12 @@ export default function EvidencePage() {
           <div className="grid gap-4 md:grid-cols-3">
             <ResourceLink
               icon={<FileText className="h-5 w-5" />}
+              title="Finality & Status KPIs"
+              description="What the dashboard fields prove (investor-facing)"
+              href="https://github.com/dmrl789/l1-explorer3/blob/main/docs/finality-and-status-kpis.md"
+            />
+            <ResourceLink
+              icon={<FileText className="h-5 w-5" />}
               title="Whitepaper"
               description="Technical overview of IPPAN L1"
               href="https://ippan.uk/whitepaper"
@@ -270,12 +276,6 @@ export default function EvidencePage() {
               title="Documentation"
               description="API reference and guides"
               href="https://docs.ippan.uk"
-            />
-            <ResourceLink
-              icon={<Github className="h-5 w-5" />}
-              title="GitHub"
-              description="Source code and issues"
-              href="https://github.com/ippan-uk"
             />
           </div>
         </CardContent>
