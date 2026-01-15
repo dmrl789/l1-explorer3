@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import Image from 'next/image';
 import { Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -179,6 +180,22 @@ export function ContactForm({ showHeader = true }: ContactFormProps) {
             </>
           )}
         </Button>
+
+        <a
+          href="https://formspree.io"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition"
+        >
+          <Image
+            src="/formspree-mark.svg"
+            alt="Formspree logo mark"
+            width={16}
+            height={16}
+            className="h-4 w-4"
+          />
+          <span>Formspree</span>
+        </a>
       </form>
     </div>
   );
