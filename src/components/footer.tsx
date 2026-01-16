@@ -14,10 +14,16 @@ import { getApiBase } from '@/lib/env';
 
 export function Footer() {
   const apiBase = getApiBase();
+  const upstreams =
+    (process.env.UPSTREAM_V1_BASES ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean) || [];
   const upstream =
+    upstreams[0] ??
     process.env.NEXT_PUBLIC_UPSTREAM_RPC_BASE ??
     process.env.UPSTREAM_RPC_BASE ??
-    'http://api2.ippan.uk';
+    "https://gateway.ippan.net";
 
   return (
     <footer className="border-t border-slate-700/30 bg-[#151c28]">
