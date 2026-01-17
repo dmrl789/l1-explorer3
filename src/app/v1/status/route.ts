@@ -91,6 +91,12 @@ export async function GET() {
     });
   }
 
+  // If no snapshot exists yet, WAIT for the first fetch to complete (blocking)
+  // This ensures serverless instances actually populate the cache before returning
+  if (!SNAPSHOT && INFLIGHT) {
+    await INFLIGHT;
+  }
+
   // If we have a snapshot, return it immediately
   if (SNAPSHOT) {
     const res = new NextResponse(SNAPSHOT.body, { status: 200 });
@@ -102,11 +108,11 @@ export async function GET() {
     return res;
   }
 
-  // No snapshot yet: return a fast "warming up" response (UI should handle)
+  // No snapshot available (upstream failed or not configured)
   const warming = {
     ok: true,
     warming_up: true,
-    hint: "Status snapshot is initializing; retry in a few seconds.",
+    hint: "Status data unavailable; upstream may be down.",
   };
 
   const res = NextResponse.json(warming, { status: 200 });
