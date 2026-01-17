@@ -5,6 +5,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 type CacheEntry = { expiresAt: number; status: number; headers: [string, string][]; body: string };
 
+type ProxyOpts = {
+  forcePath?: string; // e.g. "/v1/tx?limit=25" — overrides req.nextUrl.pathname + search
+};
+
 // Very small in-memory cache per serverless instance (helps a lot with polling endpoints)
 const GET_CACHE: Map<string, CacheEntry> = new Map();
 
@@ -44,9 +48,9 @@ function isCacheable(req: NextRequest): boolean {
   return true;
 }
 
-function makeCacheKey(req: NextRequest, upstreamBase: string): string {
+function makeCacheKey(upstreamBase: string, pathWithQuery: string): string {
   // Cache by full upstream URL (includes query string)
-  return `${upstreamBase}${req.nextUrl.pathname}${req.nextUrl.search}`;
+  return `${upstreamBase}${pathWithQuery}`;
 }
 
 function setCommonResponseHeaders(res: NextResponse, upstream: string, ms: number): void {
@@ -87,7 +91,7 @@ async function readBodyAsText(res: Response): Promise<string> {
   return await res.text();
 }
 
-export async function proxyV1(req: NextRequest): Promise<NextResponse> {
+export async function proxyV1(req: NextRequest, opts: ProxyOpts = {}): Promise<NextResponse> {
   const upstreams = getUpstreams();
   if (!upstreams.length) {
     return NextResponse.json(
@@ -100,16 +104,19 @@ export async function proxyV1(req: NextRequest): Promise<NextResponse> {
   const retries = parseIntEnv("PROXY_RETRIES", 2);
   const cacheTtlMs = parseIntEnv("PROXY_CACHE_TTL_MS", 1000);
 
-  // We proxy exactly the /v1/* path to upstream base
-  const pathname = req.nextUrl.pathname;
-  const search = req.nextUrl.search;
+  // Support forced path override for compatibility routes (e.g. /v1/tx/recent → /v1/tx?limit=25)
+  const pathWithQuery = opts.forcePath ?? (req.nextUrl.pathname + req.nextUrl.search);
+  // Split back out for URL building (if forcePath includes query string)
+  const qIdx = pathWithQuery.indexOf("?");
+  const pathname = qIdx >= 0 ? pathWithQuery.slice(0, qIdx) : pathWithQuery;
+  const search = qIdx >= 0 ? pathWithQuery.slice(qIdx) : "";
   const method = req.method.toUpperCase();
 
   const attempted: Array<{ upstream: string; url: string; err?: string; ms?: number }> = [];
 
   // For GET, tiny in-memory cache per instance (in addition to CDN caching)
   if (isCacheable(req) && cacheTtlMs > 0) {
-    const key = makeCacheKey(req, upstreams[0]); // key by primary upstream for cache hit stability
+    const key = makeCacheKey(upstreams[0], pathWithQuery); // key by primary upstream for cache hit stability
     const hit = GET_CACHE.get(key);
     if (hit && hit.expiresAt > nowMs()) {
       const res = new NextResponse(hit.body, { status: hit.status });
@@ -169,7 +176,7 @@ export async function proxyV1(req: NextRequest): Promise<NextResponse> {
 
       if (method === "GET" && upstreamRes.ok && isCacheable(req) && cacheTtlMs > 0) {
         const expiresAt = nowMs() + cacheTtlMs;
-        const key = makeCacheKey(req, upstreams[0]);
+        const key = makeCacheKey(upstreams[0], pathWithQuery);
         GET_CACHE.set(key, { expiresAt, status: upstreamRes.status, headers: safeHeaders, body });
       }
 
