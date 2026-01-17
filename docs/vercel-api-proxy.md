@@ -31,6 +31,10 @@ Set these in Vercel (Production + Preview):
 
 For local testing, copy the `.env.local` template at the repo root and customize as needed.
 
+## Infrastructure & SSH
+
+See [docs/ops/ssh-keys.md](ops/ssh-keys.md) for a list of authorized SSH keys used for managing devnet nodes.
+
 ## Supported proxy endpoints
 
 At minimum, the UI expects the following:
