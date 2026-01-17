@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic rendering to ensure fresh data on each request
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { Activity, Clock, Zap, Users, Box, ArrowRightLeft } from "lucide-react";
 import { useStatus, useBlocks, useTransactions } from "@/lib/hooks";

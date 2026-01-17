@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering to ensure fresh data on refresh
+export const dynamic = "force-dynamic";
+
 import { 
   Network, 
   Server, 
