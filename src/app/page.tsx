@@ -18,6 +18,26 @@ function truncateId(id: string, len = 16): string {
   return `${id.slice(0, half)}…${id.slice(-half)}`;
 }
 
+// Format IPPAN Time (microseconds) as readable UTC time
+function formatIppanTime(us: number | undefined): string {
+  if (typeof us !== "number" || !Number.isFinite(us)) return "—";
+  // Convert microseconds to milliseconds for Date
+  const date = new Date(us / 1000);
+  // Format as HH:MM:SS.mmm UTC
+  const hours = date.getUTCHours().toString().padStart(2, "0");
+  const mins = date.getUTCMinutes().toString().padStart(2, "0");
+  const secs = date.getUTCSeconds().toString().padStart(2, "0");
+  const ms = date.getUTCMilliseconds().toString().padStart(3, "0");
+  return `${hours}:${mins}:${secs}.${ms}`;
+}
+
+// Format IPPAN Time as full date
+function formatIppanDate(us: number | undefined): string {
+  if (typeof us !== "number" || !Number.isFinite(us)) return "";
+  const date = new Date(us / 1000);
+  return date.toISOString().split("T")[0]; // YYYY-MM-DD
+}
+
 export default function Dashboard() {
   const { status, isLoading: statusLoading, error: statusError } = useStatus();
   const { blocks, isLoading: blocksLoading, error: blocksError } = useBlocks(10);
@@ -107,8 +127,8 @@ export default function Dashboard() {
         />
         <KpiCard
           title="IPPAN Time"
-          value={ippanTime !== undefined ? String(ippanTime) : "—"}
-          subtitle={`Monotonic: ${monotonic !== undefined ? String(monotonic) : "—"} · Drift: ${fmt(driftMs)}ms`}
+          value={formatIppanTime(ippanTime)}
+          subtitle={`${formatIppanDate(ippanTime)} UTC · Monotonic: ${monotonic !== undefined ? (monotonic ? "Yes" : "No") : "—"}`}
           icon={<Clock className="h-4 w-4" />}
           loading={statusLoading}
         />
