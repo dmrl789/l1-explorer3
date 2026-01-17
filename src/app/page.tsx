@@ -23,8 +23,23 @@ export default function Dashboard() {
   const { blocks, isLoading: blocksLoading, error: blocksError } = useBlocks(10);
   const { transactions, isLoading: txLoading, error: txError } = useTransactions(10);
 
+  // Determine network connectivity: connected if we have blocks OR status data
+  // Don't show "unable to connect" if just one widget fails
+  const hasStatusData = status && !status.warming_up;
+  const hasBlocksData = blocks && blocks.length > 0;
+  const isConnected = hasStatusData || hasBlocksData;
+  const showConnectionError = statusError && blocksError && !statusLoading && !blocksLoading;
+
+  // Handle warming_up state gracefully
+  const isWarmingUp = status?.warming_up === true;
   const health = status?.health ?? "unknown";
-  const healthLabel = health === "healthy" ? "Healthy" : health === "degraded" ? "Degraded" : health === "unhealthy" ? "Unhealthy" : "Unknown";
+  const healthLabel = isWarmingUp 
+    ? "Initializing" 
+    : health === "healthy" ? "Healthy" 
+    : health === "degraded" ? "Degraded" 
+    : health === "unhealthy" ? "Unhealthy" 
+    : isConnected ? "Healthy" // If we have data, assume healthy
+    : "Unknown";
   
   const ippanTime = status?.ippan_time?.value;
   const monotonic = status?.ippan_time?.monotonic;
@@ -53,17 +68,30 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs px-2 sm:px-3 py-1">
-            <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 mr-1.5 sm:mr-2 animate-pulse" />
-            Live
+            <span className={`h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full mr-1.5 sm:mr-2 ${
+              showConnectionError ? "bg-red-500" : 
+              isWarmingUp ? "bg-yellow-500 animate-pulse" : 
+              "bg-emerald-500 animate-pulse"
+            }`} />
+            {showConnectionError ? "Offline" : isWarmingUp ? "Initializing" : "Live"}
           </Badge>
         </div>
       </div>
 
-      {/* Error Banner */}
-      {statusError && (
+      {/* Error Banner - only show if BOTH status and blocks fail */}
+      {showConnectionError && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
           <p className="text-sm text-amber-300">
             Unable to connect to the network. Please check your connection.
+          </p>
+        </div>
+      )}
+
+      {/* Warming Up Banner - show when status is initializing but blocks work */}
+      {isWarmingUp && !showConnectionError && (
+        <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
+          <p className="text-sm text-blue-300">
+            Network status is initializing. Data will appear shortly.
           </p>
         </div>
       )}

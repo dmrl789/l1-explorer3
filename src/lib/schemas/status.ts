@@ -24,6 +24,9 @@ export const StatusSchema = z.object({
   network_name: z.string().optional().default('IPPAN DevNet'),
   chain_type: z.string().optional().default('L1'),
 
+  // Warming up state (returned when snapshot is initializing)
+  warming_up: z.boolean().optional(),
+  
   // Health & version
   health: NetworkHealthSchema.optional().default('unknown'),
   version: z.string().optional(),
