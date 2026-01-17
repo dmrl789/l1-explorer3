@@ -85,7 +85,15 @@ export function normalizeStatus(raw: unknown): Status {
     // Normalize IPPAN time - use utc_now_us from the backend
     // Note: ippan_time may be explicitly null, so check for truthy value
     ippan_time: normalizeIppanTime(
-      data.ippan_now_us || data.utc_now_us || data.ippan_time || data.time || data.timestamp
+      // Prefer the microsecond protocol time fields exposed by the node RPC.
+      data.ippan_time_us ||
+        data.time_us ||
+        // Legacy / transitional field names.
+        data.ippan_now_us ||
+        data.utc_now_us ||
+        data.ippan_time ||
+        data.time ||
+        data.timestamp
     ),
     // Normalize finality
     finality: normalizeFinality(data.finality ?? data.finality_stats),

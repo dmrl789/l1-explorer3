@@ -21,24 +21,29 @@ function truncateId(id: string, len = 16): string {
   return `${id.slice(0, half)}…${id.slice(-half)}`;
 }
 
-// Format IPPAN Time (microseconds) as readable UTC time
-function formatIppanTime(us: number | undefined): string {
+// Format IPPAN Time (microseconds) as a readable UTC timestamp:
+// "YYYY-MM-DD HH:mm:ss.uuuuuu"
+function formatIppanTimestampUtc(us: number | undefined): string {
   if (typeof us !== "number" || !Number.isFinite(us)) return "—";
-  // Convert microseconds to milliseconds for Date
-  const date = new Date(us / 1000);
-  // Format as HH:MM:SS.mmm UTC
-  const hours = date.getUTCHours().toString().padStart(2, "0");
-  const mins = date.getUTCMinutes().toString().padStart(2, "0");
-  const secs = date.getUTCSeconds().toString().padStart(2, "0");
-  const ms = date.getUTCMilliseconds().toString().padStart(3, "0");
-  return `${hours}:${mins}:${secs}.${ms}`;
-}
 
-// Format IPPAN Time as full date
-function formatIppanDate(us: number | undefined): string {
-  if (typeof us !== "number" || !Number.isFinite(us)) return "";
-  const date = new Date(us / 1000);
-  return date.toISOString().split("T")[0]; // YYYY-MM-DD
+  // Keep everything integer and preserve microseconds.
+  const usInt = BigInt(Math.trunc(us));
+  const MICROS_PER_SEC = BigInt(1000000);
+  const sec = usInt / MICROS_PER_SEC;
+  const micros = usInt % MICROS_PER_SEC;
+
+  // Date takes milliseconds; use whole seconds (ms=0) then append micros.
+  const date = new Date(Number(sec) * 1000);
+
+  const YYYY = date.getUTCFullYear().toString().padStart(4, "0");
+  const MM = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+  const DD = date.getUTCDate().toString().padStart(2, "0");
+  const hh = date.getUTCHours().toString().padStart(2, "0");
+  const mm = date.getUTCMinutes().toString().padStart(2, "0");
+  const ss = date.getUTCSeconds().toString().padStart(2, "0");
+  const uuuuuu = micros.toString().padStart(6, "0");
+
+  return `${YYYY}-${MM}-${DD} ${hh}:${mm}:${ss}.${uuuuuu}`;
 }
 
 export default function Dashboard() {
@@ -130,8 +135,8 @@ export default function Dashboard() {
         />
         <KpiCard
           title="IPPAN Time"
-          value={formatIppanTime(ippanTime)}
-          subtitle={`${formatIppanDate(ippanTime)} UTC · Monotonic: ${monotonic !== undefined ? (monotonic ? "Yes" : "No") : "—"}`}
+          value={formatIppanTimestampUtc(ippanTime)}
+          subtitle={`UTC · Monotonic: ${monotonic !== undefined ? (monotonic ? "Yes" : "No") : "—"}${typeof driftMs === "number" ? ` · Drift: ${driftMs}ms` : ""}`}
           icon={<Clock className="h-4 w-4" />}
           loading={statusLoading}
         />
