@@ -30,7 +30,7 @@ type ValidatorNode = {
 
 type Snapshot = {
   fetchedAt: number;
-  upstream: string;
+  source: string;
   nodes: ValidatorNode[];
 };
 
@@ -54,6 +54,39 @@ function getUpstream(): string {
   return first.replace(/\/+$/, "");
 }
 
+function extractValidators(data: Record<string, unknown>): ValidatorNode[] {
+  // Extract validators from status response
+  // validator_ids is inside consensus object, or use validator_ids_sample at top level
+  const consensus = data.consensus as Record<string, unknown> | undefined;
+  
+  const validatorIds: string[] = 
+    (consensus?.validator_ids as string[]) ?? 
+    (data.validator_ids_sample as string[]) ?? 
+    (data.validator_ids as string[]) ?? 
+    [];
+  
+  const validatorsData = (consensus?.validators ?? {}) as Record<string, Record<string, unknown>>;
+
+  return validatorIds.map((id: string) => {
+    const v = validatorsData[id] ?? {};
+    
+    // Calculate uptime percent (backend returns 0-10000 scale)
+    const uptimeRaw = (v.uptime as number) ?? 0;
+    const uptimePercent = uptimeRaw > 100 ? uptimeRaw / 100 : uptimeRaw;
+
+    return {
+      node_id: id,
+      role: "validator" as const,
+      status: "online" as const, // If in validator list, assume online
+      uptime_percent: uptimePercent,
+      blocks_proposed: v.blocks_proposed as number | undefined,
+      blocks_verified: v.blocks_verified as number | undefined,
+      latency_ms: v.latency as number | undefined,
+      honesty_score: v.honesty as number | undefined,
+    };
+  });
+}
+
 async function refreshSnapshot(): Promise<void> {
   const upstream = getUpstream();
   if (!upstream) return;
@@ -63,8 +96,7 @@ async function refreshSnapshot(): Promise<void> {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    // Fetch /v1/status which contains validator info
-    // Use upstream directly for reliability
+    // Fetch status directly from upstream
     const url = `${upstream}/v1/status`;
 
     const headers: Record<string, string> = { accept: "application/json" };
@@ -78,50 +110,17 @@ async function refreshSnapshot(): Promise<void> {
       cache: "no-store",
     });
 
-    if (!res.ok) {
-      console.error(`[network/nodes] Status fetch failed: ${res.status}`);
-      return;
-    }
+    if (!res.ok) return;
 
     const data = await res.json();
-    console.log(`[network/nodes] Got status, validator_count: ${data.validator_count}`);
-    console.log(`[network/nodes] consensus.validator_ids length: ${data.consensus?.validator_ids?.length}`);
-    console.log(`[network/nodes] validator_ids_sample length: ${data.validator_ids_sample?.length}`);
+    
+    // Skip warming_up responses
+    if (data.warming_up) return;
 
-    // Extract validators from status response
-    // validator_ids is inside consensus object, or use validator_ids_sample at top level
-    const validatorIds: string[] = 
-      data.consensus?.validator_ids ?? 
-      data.validator_ids_sample ?? 
-      data.validator_ids ?? 
-      [];
-    const validatorsData = data.consensus?.validators ?? {};
-
-    console.log(`[network/nodes] Found ${validatorIds.length} validators`);
-
-    const nodes: ValidatorNode[] = validatorIds.map((id: string) => {
-      const v = validatorsData[id] ?? {};
-      
-      // Calculate uptime percent (backend returns 0-10000 scale)
-      const uptimeRaw = v.uptime ?? 0;
-      const uptimePercent = uptimeRaw > 100 ? uptimeRaw / 100 : uptimeRaw;
-
-      return {
-        node_id: id,
-        role: "validator" as const,
-        status: "online" as const, // If in validator list, assume online
-        uptime_percent: uptimePercent,
-        blocks_proposed: v.blocks_proposed,
-        blocks_verified: v.blocks_verified,
-        latency_ms: v.latency,
-        honesty_score: v.honesty,
-      };
-    });
-
-    console.log(`[network/nodes] Created ${nodes.length} node entries`);
-
-    // Always update snapshot, even with 0 nodes (means we processed successfully)
-    SNAPSHOT = { fetchedAt: nowMs(), upstream, nodes };
+    const nodes = extractValidators(data);
+    
+    // Update snapshot
+    SNAPSHOT = { fetchedAt: nowMs(), source: upstream, nodes };
   } catch {
     // swallow errors: keep last-known-good snapshot
   } finally {
