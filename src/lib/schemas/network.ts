@@ -43,13 +43,11 @@ export function normalizeNetworkNodes(raw: unknown): NetworkNodesResponse {
   
   // Handle array response
   if (Array.isArray(data)) {
+    const normalizedNodes = data.map(normalizeNode);
     return {
-      nodes: data.map(normalizeNode),
-      total_nodes: data.length,
-      online_nodes: data.filter((n) => {
-        const status = (n as Record<string, unknown>).status;
-        return status === 'online' || status === 'syncing';
-      }).length,
+      nodes: normalizedNodes,
+      total_nodes: normalizedNodes.length,
+      online_nodes: normalizedNodes.filter((n) => n.status === 'online' || n.status === 'syncing').length,
     };
   }
   
@@ -68,10 +66,17 @@ export function normalizeNetworkNodes(raw: unknown): NetworkNodesResponse {
 function normalizeNode(raw: unknown): NetworkNode {
   const data = raw as Record<string, unknown>;
   
+  // Handle is_connected boolean field from IPPAN API
+  const isConnected = data.is_connected;
   const statusStr = String(data.status ?? data.state ?? '').toLowerCase();
   let status: NodeStatus = 'unknown';
   
-  if (statusStr === 'online' || statusStr === 'up' || statusStr === 'active' || statusStr === 'connected') {
+  // Check is_connected first (IPPAN API format)
+  if (isConnected === true) {
+    status = 'online';
+  } else if (isConnected === false) {
+    status = 'offline';
+  } else if (statusStr === 'online' || statusStr === 'up' || statusStr === 'active' || statusStr === 'connected') {
     status = 'online';
   } else if (statusStr === 'offline' || statusStr === 'down' || statusStr === 'inactive' || statusStr === 'disconnected') {
     status = 'offline';
