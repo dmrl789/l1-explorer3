@@ -55,7 +55,11 @@ export function useBlocksInfinite(limit: number = 20) {
     isValidating,
     error,
     loadMore: () => setSize(size + 1),
-    refresh: () => mutate(),
+    // For SWRInfinite, reset to first page and revalidate
+    refresh: () => {
+      setSize(1);
+      return mutate();
+    },
     page: size,
   };
 }

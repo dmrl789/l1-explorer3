@@ -83,7 +83,10 @@ export function normalizeStatus(raw: unknown): Status {
     // Normalize health field
     health: normalizeHealth(data.health ?? data.status ?? data.state),
     // Normalize IPPAN time - use utc_now_us from the backend
-    ippan_time: normalizeIppanTime(data.ippan_now_us ?? data.utc_now_us ?? data.ippan_time ?? data.time ?? data.timestamp),
+    // Note: ippan_time may be explicitly null, so check for truthy value
+    ippan_time: normalizeIppanTime(
+      data.ippan_now_us || data.utc_now_us || data.ippan_time || data.time || data.timestamp
+    ),
     // Normalize finality
     finality: normalizeFinality(data.finality ?? data.finality_stats),
     // Normalize head state - use consensus.round from the backend
