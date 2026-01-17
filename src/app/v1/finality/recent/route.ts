@@ -83,11 +83,17 @@ export async function GET(req: Request) {
 
   const isFresh = SNAPSHOT && nowMs() - SNAPSHOT.fetchedAt < ttlMs;
 
-  // If stale and no refresh running, kick off a background refresh
+  // If stale and no refresh running, kick off refresh
   if (!isFresh && !INFLIGHT) {
     INFLIGHT = refreshSnapshot(limit).finally(() => {
       INFLIGHT = null;
     });
+  }
+
+  // If no snapshot exists yet, WAIT for the first fetch to complete (blocking)
+  // This ensures serverless instances actually populate the cache before returning
+  if (!SNAPSHOT && INFLIGHT) {
+    await INFLIGHT;
   }
 
   // If we have a snapshot, return it immediately
@@ -101,11 +107,11 @@ export async function GET(req: Request) {
     return res;
   }
 
-  // No snapshot yet: return a fast "warming up" response
+  // No snapshot available (upstream failed or not configured)
   const warming = {
     ok: true,
     warming_up: true,
-    hint: "Finality snapshot is initializing; retry in a few seconds.",
+    hint: "Finality data unavailable; upstream may be down.",
   };
 
   const res = NextResponse.json(warming, { status: 200 });
