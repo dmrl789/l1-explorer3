@@ -82,7 +82,12 @@ async function refreshSnapshot(): Promise<void> {
     const data = await res.json();
 
     // Extract validators from status response
-    const validatorIds: string[] = data.validator_ids ?? data.validator_ids_sample ?? [];
+    // validator_ids is inside consensus object, or use validator_ids_sample at top level
+    const validatorIds: string[] = 
+      data.consensus?.validator_ids ?? 
+      data.validator_ids_sample ?? 
+      data.validator_ids ?? 
+      [];
     const validatorsData = data.consensus?.validators ?? {};
 
     const nodes: ValidatorNode[] = validatorIds.map((id: string) => {
