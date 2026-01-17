@@ -58,12 +58,13 @@ async function refreshSnapshot(): Promise<void> {
   const upstream = getUpstream();
   if (!upstream) return;
 
-  const timeoutMs = parseIntEnv("NETWORK_NODES_SNAPSHOT_TIMEOUT_MS", 8000);
+  const timeoutMs = parseIntEnv("NETWORK_NODES_SNAPSHOT_TIMEOUT_MS", 5000);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     // Fetch /v1/status which contains validator info
+    // Use upstream directly for reliability
     const url = `${upstream}/v1/status`;
 
     const headers: Record<string, string> = { accept: "application/json" };
@@ -77,9 +78,15 @@ async function refreshSnapshot(): Promise<void> {
       cache: "no-store",
     });
 
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.error(`[network/nodes] Status fetch failed: ${res.status}`);
+      return;
+    }
 
     const data = await res.json();
+    console.log(`[network/nodes] Got status, validator_count: ${data.validator_count}`);
+    console.log(`[network/nodes] consensus.validator_ids length: ${data.consensus?.validator_ids?.length}`);
+    console.log(`[network/nodes] validator_ids_sample length: ${data.validator_ids_sample?.length}`);
 
     // Extract validators from status response
     // validator_ids is inside consensus object, or use validator_ids_sample at top level
@@ -89,6 +96,8 @@ async function refreshSnapshot(): Promise<void> {
       data.validator_ids ?? 
       [];
     const validatorsData = data.consensus?.validators ?? {};
+
+    console.log(`[network/nodes] Found ${validatorIds.length} validators`);
 
     const nodes: ValidatorNode[] = validatorIds.map((id: string) => {
       const v = validatorsData[id] ?? {};
@@ -109,9 +118,10 @@ async function refreshSnapshot(): Promise<void> {
       };
     });
 
-    if (nodes.length > 0) {
-      SNAPSHOT = { fetchedAt: nowMs(), upstream, nodes };
-    }
+    console.log(`[network/nodes] Created ${nodes.length} node entries`);
+
+    // Always update snapshot, even with 0 nodes (means we processed successfully)
+    SNAPSHOT = { fetchedAt: nowMs(), upstream, nodes };
   } catch {
     // swallow errors: keep last-known-good snapshot
   } finally {
@@ -137,7 +147,7 @@ export async function GET() {
   }
 
   // If we have a snapshot, return normalized validator nodes
-  if (SNAPSHOT && SNAPSHOT.nodes.length > 0) {
+  if (SNAPSHOT) {
     const response = {
       nodes: SNAPSHOT.nodes,
       total_nodes: SNAPSHOT.nodes.length,
