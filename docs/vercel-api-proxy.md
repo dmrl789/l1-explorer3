@@ -20,7 +20,10 @@ To keep the UI resilient, the Explorer makes **same-origin** requests (e.g. `GET
 
 Set these in Vercel (Production + Preview):
 
-- `UPSTREAM_V1_BASES` — comma-separated upstream gateway bases (HTTPS preferred). Example: `https://gateway.ippan.net`.
+- `UPSTREAM_V1_BASES` — comma-separated upstream gateway bases (HTTPS preferred).
+  - **Rule**: List **only healthy upstreams**. Do not include known-bad upstreams (e.g. 504/60s) as they add delay during rotation.
+  - **Preference**: Use **HTTPS** upstreams (gateway or TLS on api2) as soon as available.
+  - Example: `https://gateway.ippan.net`.
 - `EXPLORER_PROXY_KEY` — optional shared secret header (`X-IPPAN-Explorer-Key`) sent to each upstream request.
 - `PROXY_TIMEOUT_MS` — request timeout in milliseconds; defaults to `3500`.
 - `PROXY_RETRIES` — number of extra upstream attempts; defaults to `2`.
