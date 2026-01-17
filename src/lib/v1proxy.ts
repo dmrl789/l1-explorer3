@@ -105,6 +105,8 @@ export async function proxyV1(req: NextRequest): Promise<NextResponse> {
   const search = req.nextUrl.search;
   const method = req.method.toUpperCase();
 
+  const attempted: Array<{ upstream: string; url: string; err?: string; ms?: number }> = [];
+
   // For GET, tiny in-memory cache per instance (in addition to CDN caching)
   if (isCacheable(req) && cacheTtlMs > 0) {
     const key = makeCacheKey(req, upstreams[0]); // key by primary upstream for cache hit stability
@@ -127,6 +129,8 @@ export async function proxyV1(req: NextRequest): Promise<NextResponse> {
   for (let attempt = 0; attempt < attempts; attempt++) {
     const upstream = pickUpstream(upstreams, attempt);
     const url = `${upstream}${pathname}${search}`;
+
+    attempted.push({ upstream, url });
 
     const controller = new AbortController();
     const t0 = nowMs();
@@ -173,16 +177,28 @@ export async function proxyV1(req: NextRequest): Promise<NextResponse> {
     } catch (e) {
       clearTimeout(timer);
       lastErr = e;
+      const current = attempted[attempted.length - 1];
+      if (current) {
+        current.err = String(e);
+        current.ms = nowMs() - t0;
+      }
     }
   }
 
-  return NextResponse.json(
+  const res = NextResponse.json(
     {
       ok: false,
       error: "Proxy upstream failed",
       detail: String(lastErr ?? "unknown error"),
       hint: "Check gateway health, timeouts, and UPSTREAM_V1_BASES",
+      attempted,
     },
     { status: 502 }
   );
+
+  // Always expose debug headers on failure:
+  res.headers.set("x-ippan-proxy", "v1");
+  res.headers.set("x-ippan-proxy-attempts", String(attempted.length));
+  res.headers.set("x-ippan-proxy-upstreams", upstreams.join(","));
+  return res;
 }
