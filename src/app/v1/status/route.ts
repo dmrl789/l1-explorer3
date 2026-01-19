@@ -11,6 +11,7 @@
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type Snapshot = {
   fetchedAt: number;
@@ -80,7 +81,9 @@ async function refreshSnapshot(): Promise<void> {
 }
 
 export async function GET() {
-  const ttlMs = parseIntEnv("STATUS_SNAPSHOT_TTL_MS", 60000);
+  // Keep this tiny: the UI polls frequently and should not appear "stuck".
+  // Still provides protection against very heavy upstream /v1/status responses.
+  const ttlMs = parseIntEnv("STATUS_SNAPSHOT_TTL_MS", 1000);
 
   const isFresh = SNAPSHOT && nowMs() - SNAPSHOT.fetchedAt < ttlMs;
 
@@ -100,11 +103,19 @@ export async function GET() {
   // If we have a snapshot, return it immediately
   if (SNAPSHOT) {
     const res = new NextResponse(SNAPSHOT.body, { status: 200 });
-    res.headers.set("content-type", "application/json");
+    res.headers.set("content-type", "application/json; charset=utf-8");
     res.headers.set("x-ippan-status-source", "snapshot");
     res.headers.set("x-ippan-status-upstream", SNAPSHOT.upstream);
     res.headers.set("x-ippan-status-age-ms", String(nowMs() - SNAPSHOT.fetchedAt));
-    res.headers.set("cache-control", "public, s-maxage=5, stale-while-revalidate=60");
+    // Absolutely no caching for time/status. This prevents browser/CDN/ISR from
+    // serving stale status snapshots which can make IPPAN Time look like it
+    // updates only every few seconds (or worse).
+    res.headers.set(
+      "cache-control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
+    res.headers.set("pragma", "no-cache");
+    res.headers.set("expires", "0");
     return res;
   }
 

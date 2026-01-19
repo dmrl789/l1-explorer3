@@ -4,7 +4,8 @@ import { z } from 'zod';
  * Schema for network status response
  */
 export const IppanTimeSchema = z.object({
-  value: z.number(),
+  // Protocol time is integer microseconds; keep it as a string to avoid precision loss.
+  value: z.string(),
   monotonic: z.boolean().optional().default(true),
   drift_ms: z.number().optional().default(0),
   source: z.string().optional(),
@@ -129,13 +130,21 @@ function normalizeIppanTime(raw: unknown): IppanTime | undefined {
   if (!raw) return undefined;
 
   if (typeof raw === 'number') {
-    return { value: raw, monotonic: true, drift_ms: 0 };
+    if (!Number.isFinite(raw)) return undefined;
+    return { value: String(raw), monotonic: true, drift_ms: 0 };
+  }
+
+  if (typeof raw === 'string') {
+    const v = raw.trim();
+    if (!v) return undefined;
+    return { value: v, monotonic: true, drift_ms: 0 };
   }
 
   if (typeof raw === 'object' && raw !== null) {
     const obj = raw as Record<string, unknown>;
+    const vRaw = obj.value ?? obj.timestamp ?? obj.time ?? 0;
     return {
-      value: Number(obj.value ?? obj.timestamp ?? obj.time ?? 0),
+      value: typeof vRaw === 'string' ? vRaw.trim() : String(vRaw),
       monotonic: Boolean(obj.monotonic ?? true),
       drift_ms: Number(obj.drift_ms ?? obj.drift ?? 0),
       source: obj.source as string | undefined,
