@@ -1,14 +1,14 @@
 "use client";
 
-// Force dynamic rendering to ensure fresh data on each request
-export const dynamic = "force-dynamic";
-
+import React from "react";
 import Link from "next/link";
 import { Activity, Clock, Zap, Users, Box, ArrowRightLeft } from "lucide-react";
 import { useStatus, useBlocks, useTransactions } from "@/lib/hooks";
 import { KpiCard, KpiGrid } from "@/components/kpi-card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import IppanTimeTicker from "@/components/IppanTimeTicker";
+import { getStatus } from "@/lib/api";
 
 function fmt(n: number | undefined | null): string {
   if (typeof n !== "number" || !Number.isFinite(n)) return "—";
@@ -19,31 +19,6 @@ function truncateId(id: string, len = 16): string {
   if (!id || id.length <= len) return id || "—";
   const half = Math.floor(len / 2);
   return `${id.slice(0, half)}…${id.slice(-half)}`;
-}
-
-// Format IPPAN Time (microseconds) as a readable UTC timestamp:
-// "YYYY-MM-DD HH:mm:ss.uuuuuu"
-function formatIppanTimestampUtc(us: number | undefined): string {
-  if (typeof us !== "number" || !Number.isFinite(us)) return "—";
-
-  // Keep everything integer and preserve microseconds.
-  const usInt = BigInt(Math.trunc(us));
-  const MICROS_PER_SEC = BigInt(1000000);
-  const sec = usInt / MICROS_PER_SEC;
-  const micros = usInt % MICROS_PER_SEC;
-
-  // Date takes milliseconds; use whole seconds (ms=0) then append micros.
-  const date = new Date(Number(sec) * 1000);
-
-  const YYYY = date.getUTCFullYear().toString().padStart(4, "0");
-  const MM = (date.getUTCMonth() + 1).toString().padStart(2, "0");
-  const DD = date.getUTCDate().toString().padStart(2, "0");
-  const hh = date.getUTCHours().toString().padStart(2, "0");
-  const mm = date.getUTCMinutes().toString().padStart(2, "0");
-  const ss = date.getUTCSeconds().toString().padStart(2, "0");
-  const uuuuuu = micros.toString().padStart(6, "0");
-
-  return `${YYYY}-${MM}-${DD} ${hh}:${mm}:${ss}.${uuuuuu}`;
 }
 
 export default function Dashboard() {
@@ -69,9 +44,15 @@ export default function Dashboard() {
     : isConnected ? "Healthy" // If we have data, assume healthy
     : "Unknown";
   
-  const ippanTime = status?.ippan_time?.value;
   const monotonic = status?.ippan_time?.monotonic;
   const driftMs = status?.ippan_time?.drift_ms;
+
+  const fetchStatus = React.useCallback(async () => {
+    const s = await getStatus();
+    const v = s.ippan_time?.value;
+    if (!v) throw new Error("missing ippan_time");
+    return { ippan_time_us: v };
+  }, []);
 
   const p50 = status?.finality?.p50_ms;
   const p95 = status?.finality?.p95_ms;
@@ -135,8 +116,10 @@ export default function Dashboard() {
         />
         <KpiCard
           title="IPPAN Time"
-          value={formatIppanTimestampUtc(ippanTime)}
-          subtitle={`UTC · Monotonic: ${monotonic !== undefined ? (monotonic ? "Yes" : "No") : "—"}${typeof driftMs === "number" ? ` · Drift: ${driftMs}ms` : ""}`}
+          value={<IppanTimeTicker fetchStatus={fetchStatus} pollMs={750} tickMs={100} />}
+          subtitle={`Monotonic: ${
+            monotonic !== undefined ? (monotonic ? "Yes" : "No") : "—"
+          } · Drift: ${driftMs !== undefined ? `${driftMs}ms` : "—"}`}
           icon={<Clock className="h-4 w-4" />}
           loading={statusLoading}
         />

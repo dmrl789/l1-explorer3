@@ -8,7 +8,6 @@ import {
   ExternalLink,
   CheckCircle2,
   BookOpen,
-  Github,
   FileText,
 } from 'lucide-react';
 import { useStatus, useAuditReplayStatus } from '@/lib/hooks';
@@ -119,7 +118,7 @@ export default function EvidencePage() {
             />
             <MetricItem 
               label="IPPAN Time"
-              value={status?.ippan_time?.value?.toLocaleString() ?? '—'}
+              value={status?.ippan_time?.value ?? '—'}
               sublabel={status?.ippan_time?.monotonic ? 'Monotonic ✓' : undefined}
             />
             <MetricItem 

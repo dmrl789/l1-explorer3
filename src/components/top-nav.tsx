@@ -124,6 +124,8 @@ function MobileMoreMenu({ items, pathname }: { items: typeof navItems; pathname:
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Close the menu on navigation.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsOpen(false);
   }, [pathname]);
 
