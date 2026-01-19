@@ -1,9 +1,5 @@
 "use client";
 
-// Force dynamic rendering to ensure fresh data on each request
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 import React from "react";
 import Link from "next/link";
 import { Activity, Clock, Zap, Users, Box, ArrowRightLeft } from "lucide-react";
