@@ -4,7 +4,7 @@
  * Supports both /v1/* endpoints and legacy endpoints with automatic fallback.
  */
 
-import { fetchWithCompatibility, ApiRequestError } from './fetchJson';
+import { fetchJson, fetchWithCompatibility, ApiRequestError } from './fetchJson';
 import {
   // Status
   type Status,
@@ -38,6 +38,19 @@ import {
   // Network
   type NetworkNodesResponse,
   normalizeNetworkNodes,
+  // Proofs
+  type ProofFinality,
+  type ProofDlcFinality,
+  type ProofBuild,
+  type ProofPipeline,
+  type ProofPerf,
+  type ProofSizing,
+  normalizeProofFinality,
+  normalizeProofDlcFinality,
+  normalizeProofBuild,
+  normalizeProofPipeline,
+  normalizeProofPerf,
+  normalizeProofSizing,
 } from './schemas';
 
 // Re-export types for convenience
@@ -54,6 +67,12 @@ export type {
   AuditReplayStatus,
   CheckpointsListResponse,
   NetworkNodesResponse,
+  ProofFinality,
+  ProofDlcFinality,
+  ProofBuild,
+  ProofPipeline,
+  ProofPerf,
+  ProofSizing,
 };
 
 export { ApiRequestError };
@@ -157,6 +176,9 @@ export async function listBlocks(params: PaginationParams = {}): Promise<BlocksL
   const query = buildQuery({
     limit: params.limit ?? 20,
     cursor: params.cursor,
+    // Ensure the explorer UI doesn't get "stuck" on cached proxy/CDN results.
+    // `nocache=1` is stripped before forwarding to upstream by `proxyV1`.
+    nocache: 1,
   });
   
   const { data } = await fetchWithCompatibility<unknown>(`/v1/blocks${query}`, `/blocks${query}`);
@@ -293,5 +315,65 @@ export async function listNetworkNodes(): Promise<NetworkNodesResponse> {
       return { nodes: [] };
     }
     throw error;
+  }
+}
+
+// ============================================================================
+// Proofs (DevNet Evidence)
+// ============================================================================
+
+export async function getProofFinality(): Promise<ProofFinality | null> {
+  try {
+    // Note: /v1/proof/dlc_finality returns the basic summary (despite the name)
+    const data = await fetchJson<unknown>('/v1/proof/dlc_finality');
+    return normalizeProofFinality(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function getProofDlcFinality(): Promise<ProofDlcFinality | null> {
+  try {
+    // Note: /v1/proof/finality returns the DLC-detailed data (node_id, lag_us, dual, async_writer)
+    const data = await fetchJson<unknown>('/v1/proof/finality');
+    return normalizeProofDlcFinality(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function getProofBuild(): Promise<ProofBuild | null> {
+  try {
+    const data = await fetchJson<unknown>('/v1/proof/build');
+    return normalizeProofBuild(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function getProofPipeline(): Promise<ProofPipeline | null> {
+  try {
+    const data = await fetchJson<unknown>('/v1/proof/pipeline');
+    return normalizeProofPipeline(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function getProofPerf(): Promise<ProofPerf | null> {
+  try {
+    const data = await fetchJson<unknown>('/v1/proof/perf');
+    return normalizeProofPerf(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function getProofSizing(): Promise<ProofSizing | null> {
+  try {
+    const data = await fetchJson<unknown>('/v1/proof/sizing');
+    return normalizeProofSizing(data);
+  } catch {
+    return null;
   }
 }

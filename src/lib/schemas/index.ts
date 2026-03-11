@@ -7,3 +7,4 @@ export * from './transactions';
 export * from './search';
 export * from './audit';
 export * from './network';
+export * from './proofs';

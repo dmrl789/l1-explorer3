@@ -7,9 +7,13 @@ export const BlockSummarySchema = z.object({
   block_id: z.string(),
   hashtimer: z.string().optional(),
   round_id: z.union([z.string(), z.number()]).optional(),
+  // Upstream may provide `parent_ids` (new) or `parents` (legacy); we normalize to `parent_ids`.
+  parent_ids: z.array(z.string()).optional().default([]),
   parent_count: z.number().optional().default(0),
   tx_count: z.number().optional().default(0),
   finalized: z.boolean().optional().default(false),
+  // IPPAN time in microseconds (as returned by upstream blocks endpoints)
+  ippan_time: z.number().optional(),
   timestamp: z.number().optional(),
   created_at: z.string().optional(),
 });
@@ -63,7 +67,8 @@ export function normalizeBlocksList(raw: unknown): BlocksListResponse {
 
 export function normalizeBlockSummary(raw: unknown): BlockSummary {
   const data = raw as Record<string, unknown>;
-  const parentsArr = data.parents as unknown[] | undefined;
+  const parentsRaw = (data.parent_ids ?? data.parents ?? (data.parent ? [data.parent] : [])) as unknown;
+  const parentsArr = Array.isArray(parentsRaw) ? parentsRaw : [];
   const txsArr = data.transactions as unknown[] | undefined;
   
   let parentCount = 0;
@@ -85,14 +90,21 @@ export function normalizeBlockSummary(raw: unknown): BlockSummary {
   } else if (data.txCount !== undefined) {
     txCount = Number(data.txCount);
   }
+
+  const ippanTimeRaw =
+    data.ippan_time ?? data.ippanTime ?? data.ippan_now_us ?? data.utc_now_us ?? data.time_us ?? data.timestamp_us;
+  const ippanTimeNum = ippanTimeRaw !== undefined ? Number(ippanTimeRaw) : undefined;
+  const ippan_time = ippanTimeNum !== undefined && Number.isFinite(ippanTimeNum) ? ippanTimeNum : undefined;
   
   return {
     block_id: String(data.block_id ?? data.id ?? data.hash ?? ''),
     hashtimer: (data.hashtimer ?? data.hash_timer) as string | undefined,
     round_id: (data.round_id ?? data.round) as string | number | undefined,
+    parent_ids: parentsArr.map(String),
     parent_count: parentCount,
     tx_count: txCount,
     finalized: Boolean(data.finalized ?? data.is_finalized ?? data.final),
+    ippan_time,
     timestamp: data.timestamp as number | undefined,
     created_at: (data.created_at ?? data.createdAt ?? data.time) as string | undefined,
   };

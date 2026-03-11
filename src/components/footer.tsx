@@ -12,18 +12,9 @@ import {
 } from './ui/dialog';
 import { getApiBase } from '@/lib/env';
 
-export function Footer() {
+export function Footer({ upstream }: { upstream?: string }) {
   const apiBase = getApiBase();
-  const upstreams =
-    (process.env.UPSTREAM_V1_BASES ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean) || [];
-  const upstream =
-    upstreams[0] ??
-    process.env.NEXT_PUBLIC_UPSTREAM_RPC_BASE ??
-    process.env.UPSTREAM_RPC_BASE ??
-    "https://gateway.ippan.net";
+  const upstreamShown = upstream ?? "(not configured)";
 
   return (
     <footer className="border-t border-slate-700/30 bg-[#151c28]">
@@ -34,7 +25,7 @@ export function Footer() {
             <p className="mt-1 text-[11px] text-slate-600">
               API base: <code className="font-mono">{apiBase === '' ? '(same-origin)' : apiBase}</code>
               {' · '}
-              upstream: <code className="font-mono">{upstream}</code>
+              upstream: <code className="font-mono">{upstreamShown}</code>
             </p>
           </div>
           <Dialog>

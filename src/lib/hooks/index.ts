@@ -7,3 +7,4 @@ export * from './useTransactions';
 export * from './useAudit';
 export * from './useNetwork';
 export * from './useSearch';
+export * from './useProofs';

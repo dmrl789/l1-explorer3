@@ -21,6 +21,7 @@ import { TableSkeleton } from '@/components/skeletons';
 import { ErrorState, EmptyState, WarningBanner } from '@/components/error-state';
 import { CopyableText } from '@/components/copy-button';
 import { cn } from '@/lib/utils';
+import { formatIppanTimeUsToHashtimer, formatIppanTimeUsToIso } from '@/lib/format/hashtimer';
 
 export default function BlocksPage() {
   const { blocks, hasMore, isLoading, error, loadMore, refresh } = useBlocksInfinite(20);
@@ -96,14 +97,32 @@ export default function BlocksPage() {
                           </Link>
                         </TableCell>
                         <TableCell>
-                          {block.hashtimer ? (
-                            <CopyableText value={block.hashtimer} />
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          {(() => {
+                            const shown = block.hashtimer ?? formatIppanTimeUsToHashtimer(block.ippan_time);
+                            const iso = formatIppanTimeUsToIso(block.ippan_time);
+                            if (!shown || shown === '—') return <span className="text-muted-foreground">—</span>;
+                            return (
+                              <span title={iso ? `IPPAN time: ${iso}` : undefined}>
+                                <CopyableText value={shown} />
+                              </span>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell className="text-center">
-                          {block.parent_count}
+                          {(() => {
+                            const count = block.parent_ids?.length ?? 0;
+                            const first = block.parent_ids?.[0];
+                            const firstShort = first ? `${first.slice(0, 8)}…` : undefined;
+                            const title = block.parent_ids?.length ? block.parent_ids.join('\n') : undefined;
+                            return (
+                              <span title={title}>
+                                {count}
+                                {count > 0 && firstShort ? (
+                                  <span className="text-muted-foreground"> ({firstShort})</span>
+                                ) : null}
+                              </span>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           {block.round_id ? (

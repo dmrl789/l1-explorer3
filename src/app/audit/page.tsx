@@ -1,369 +1,324 @@
 'use client';
 
 import Link from 'next/link';
-import { 
-  Shield, 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
+import {
+  Shield,
+  CheckCircle2,
+  XCircle,
   AlertTriangle,
   RefreshCw,
   Clock,
-  GitCommit,
   Database,
+  Lock,
+  FileCheck,
+  Hash,
+  Layers,
 } from 'lucide-react';
-import { useAuditReplayStatus, useCheckpointsInfinite } from '@/lib/hooks';
+import {
+  useProofFinality,
+  useProofDlcFinality,
+  useProofPerf,
+  useRounds,
+  useStatus,
+} from '@/lib/hooks';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { PageSkeleton, TableSkeleton } from '@/components/skeletons';
-import { EmptyState } from '@/components/error-state';
-import { CopyableText, CopyButton } from '@/components/copy-button';
+import { CopyableText } from '@/components/copy-button';
+import { ProofBadge } from '@/components/proof-panel';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import type { ReplayStatus } from '@/lib/schemas';
-
-const statusConfig: Record<ReplayStatus, {
-  icon: typeof CheckCircle2;
-  color: string;
-  bgColor: string;
-  label: string;
-}> = {
-  pass: {
-    icon: CheckCircle2,
-    color: 'text-green-600',
-    bgColor: 'bg-green-500/10',
-    label: 'PASS',
-  },
-  fail: {
-    icon: XCircle,
-    color: 'text-red-600',
-    bgColor: 'bg-red-500/10',
-    label: 'FAIL',
-  },
-  running: {
-    icon: Loader2,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-500/10',
-    label: 'RUNNING',
-  },
-  unavailable: {
-    icon: AlertTriangle,
-    color: 'text-gray-500',
-    bgColor: 'bg-gray-500/10',
-    label: 'UNAVAILABLE',
-  },
-};
 
 export default function AuditPage() {
-  const { replayStatus, isLoading: statusLoading, refresh: refreshStatus } = useAuditReplayStatus();
-  const { 
-    checkpoints, 
-    hasMore, 
-    isLoading: checkpointsLoading, 
-    loadMore, 
-    refresh: refreshCheckpoints 
-  } = useCheckpointsInfinite(10);
+  const { proof: finalityProof, isLoading: finalityLoading, refresh: refreshFinality } = useProofFinality();
+  const { proof: dlcFinality, refresh: refreshDlc } = useProofDlcFinality();
+  const { proof: perfProof } = useProofPerf();
+  const { rounds, isLoading: roundsLoading } = useRounds(20);
+  const { status } = useStatus();
 
-  if (statusLoading && !replayStatus) {
+  if (finalityLoading && !finalityProof) {
     return <PageSkeleton />;
   }
 
-  const status = replayStatus?.status ?? 'unavailable';
-  const config = statusConfig[status];
-  const StatusIcon = config.icon;
+  const refreshAll = () => {
+    refreshFinality();
+    refreshDlc();
+  };
+
+  // Determine overall integrity status
+  const dualConsistent = dlcFinality?.dual
+    ? dlcFinality.dual.consensus_finalized_txs_total === dlcFinality.dual.durable_finalized_txs_total
+    : false;
+  const hasFinality = (finalityProof?.finalized_rounds_total ?? 0) > 0;
+  const isDurable = perfProof?.commit_mode === 'durable';
+  const zeroWriteErrors = (dlcFinality?.async_writer?.write_errors ?? 0) === 0;
+  const overallPass = hasFinality && dualConsistent && isDurable && zeroWriteErrors;
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Audit / Replay</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Finality & Replayability</h1>
           <p className="text-muted-foreground mt-1">
-            Verify network integrity and state replayability
+            Cryptographic finality certificates, hash-chain integrity, and deterministic replay proof
           </p>
         </div>
-        <Button variant="outline" onClick={() => { refreshStatus(); refreshCheckpoints(); }}>
+        <Button variant="outline" onClick={refreshAll}>
           <RefreshCw className="h-4 w-4 mr-1" />
           Refresh
         </Button>
       </div>
 
-      {/* Replay Status Card */}
-      <Card className={cn('relative overflow-hidden', config.bgColor)}>
+      {/* Integrity Status */}
+      <Card className={cn(
+        'relative overflow-hidden',
+        overallPass ? 'bg-emerald-500/5' : 'bg-yellow-500/5'
+      )}>
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className={cn(
                 'rounded-full p-4',
-                config.bgColor
+                overallPass ? 'bg-emerald-500/10' : 'bg-yellow-500/10'
               )}>
-                <StatusIcon className={cn(
-                  'h-8 w-8',
-                  config.color,
-                  status === 'running' && 'animate-spin'
-                )} />
+                {overallPass ? (
+                  <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                ) : (
+                  <AlertTriangle className="h-8 w-8 text-yellow-400" />
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold">Replay Status</h2>
-                  <Badge 
-                    variant="outline" 
-                    className={cn(config.color, 'border-current')}
+                  <h2 className="text-2xl font-bold">Chain Integrity</h2>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      overallPass ? 'text-emerald-400 border-emerald-400' : 'text-yellow-400 border-yellow-400'
+                    )}
                   >
-                    {config.label}
+                    {overallPass ? 'VERIFIED' : 'PARTIAL'}
                   </Badge>
                 </div>
                 <p className="text-muted-foreground mt-1">
-                  {status === 'pass' && 'All state transitions verified from genesis'}
-                  {status === 'fail' && 'Replay verification failed'}
-                  {status === 'running' && 'Replay verification in progress'}
-                  {status === 'unavailable' && 'Replay status endpoint not available'}
+                  {overallPass
+                    ? 'DLC finality, durable persistence, and dual consistency all verified'
+                    : 'Some verification checks pending or unavailable'}
                 </p>
               </div>
             </div>
 
-            {replayStatus && status !== 'unavailable' && (
+            {finalityProof && (
               <div className="flex flex-wrap gap-4 text-sm">
-                {replayStatus.last_run && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      Last run: {formatDistanceToNow(new Date(replayStatus.last_run), { addSuffix: true })}
-                    </span>
-                  </div>
-                )}
-                {replayStatus.duration_ms && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Duration:</span>
-                    <span>{(replayStatus.duration_ms / 1000).toFixed(1)}s</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  <span>
+                    {finalityProof.finalized_rounds_total.toLocaleString()} finalized rounds
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FileCheck className="h-4 w-4 text-muted-foreground" />
+                  <span>
+                    {finalityProof.finalized_txs_total.toLocaleString()} finalized txs
+                  </span>
+                </div>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Stats Grid */}
-      {replayStatus && status !== 'unavailable' && (
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Verified Rounds
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {replayStatus.verified_rounds?.toLocaleString() ?? '—'}
-              </div>
-              {replayStatus.from_round && replayStatus.to_round && (
-                <p className="text-xs text-muted-foreground">
-                  #{replayStatus.from_round} → #{replayStatus.to_round}
-                </p>
+      {/* Verification Checks */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <VerifyCard
+          label="DLC Finality"
+          pass={hasFinality}
+          detail={hasFinality ? `${finalityProof?.finalized_rounds_total} rounds` : 'No finality'}
+        />
+        <VerifyCard
+          label="Dual Consistency"
+          pass={dualConsistent}
+          detail={dualConsistent ? 'Consensus = Durable' : 'Mismatch or unavailable'}
+        />
+        <VerifyCard
+          label="Durable Persistence"
+          pass={isDurable}
+          detail={isDurable ? `fsync every ${perfProof?.fsync_every_n_rounds ?? 1} round` : 'Not durable'}
+        />
+        <VerifyCard
+          label="Zero Write Errors"
+          pass={zeroWriteErrors}
+          detail={zeroWriteErrors ? `${dlcFinality?.async_writer?.records_written ?? 0} records clean` : 'Write errors detected'}
+        />
+      </div>
+
+      {/* Finality Commitments from DLC */}
+      {dlcFinality && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Lock className="h-4 w-4" />
+              DLC Finality Commitment
+            </CardTitle>
+            <CardDescription>
+              Finality attestation from DLC consensus engine — the canonical source of truth
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              <CommitItem label="Node ID" value={dlcFinality.node_id} />
+              <CommitItem label="Chain ID" value={String(dlcFinality.chain_id)} />
+              <CommitItem label="Last Finalized Round" value={`#${dlcFinality.finalized_round}`} />
+              <CommitItem label="Total Finalized Rounds" value={Number(dlcFinality.finalized_rounds_total).toLocaleString()} />
+              <CommitItem label="Total Finalized Blocklets" value={Number(dlcFinality.finalized_blocklets_total).toLocaleString()} />
+              <CommitItem label="Total Finalized Txs" value={Number(dlcFinality.finalized_txs_total).toLocaleString()} />
+              <CommitItem label="Total Finalized Bytes" value={formatBytes(Number(dlcFinality.finalized_bytes_total))} />
+              {dlcFinality.timestamp_unix_ms && (
+                <CommitItem label="Timestamp" value={new Date(Number(dlcFinality.timestamp_unix_ms)).toISOString()} />
               )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Verified Blocks
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {replayStatus.verified_blocks?.toLocaleString() ?? '—'}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Verified Transactions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {replayStatus.verified_transactions?.toLocaleString() ?? '—'}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Commit Fingerprint
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {replayStatus.commit_fingerprint ? (
-                <div className="flex items-center gap-2">
-                  <GitCommit className="h-4 w-4 text-muted-foreground" />
-                  <code className="font-mono text-sm">
-                    {replayStatus.commit_fingerprint.slice(0, 7)}
-                  </code>
-                  <CopyButton value={replayStatus.commit_fingerprint} />
-                </div>
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {replayStatus?.error_message && (
-        <Card className="border-red-500/20 bg-red-500/5">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <XCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-medium text-red-600">Replay Error</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {replayStatus.error_message}
-                </p>
-              </div>
             </div>
+
+            {/* Commit Latency */}
+            {dlcFinality.commit_us && (
+              <>
+                <div className="mt-4 space-y-2">
+                  <span className="text-sm font-medium text-muted-foreground">Commit Latency (fsync)</span>
+                  <div className="grid gap-3 md:grid-cols-5">
+                    <LatencyStat label="Commits" value={dlcFinality.commit_us.count.toLocaleString()} />
+                    <LatencyStat label="Min" value={`${(dlcFinality.commit_us.min_us / 1000).toFixed(2)}ms`} />
+                    <LatencyStat label="p50" value={`${(dlcFinality.commit_us.p50_us / 1000).toFixed(2)}ms`} />
+                    <LatencyStat label="p95" value={`${(dlcFinality.commit_us.p95_us / 1000).toFixed(2)}ms`} />
+                    <LatencyStat label="Max" value={`${(dlcFinality.commit_us.max_us / 1000).toFixed(2)}ms`} />
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Checkpoints */}
+      {/* Finalized Rounds — Hash Chain */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              State Checkpoints
-            </CardTitle>
-            <CardDescription>
-              Cryptographic commitments at each round boundary
-            </CardDescription>
-          </div>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Hash className="h-4 w-4" />
+            Finalized Rounds — Hash Chain
+          </CardTitle>
+          <CardDescription>
+            Each round links to its predecessor via prev_round_hash, forming an immutable chain.
+            State roots commit to the full ledger state at each round boundary.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {checkpointsLoading && checkpoints.length === 0 ? (
+          {roundsLoading && (!rounds || rounds.length === 0) ? (
             <TableSkeleton rows={5} columns={5} />
-          ) : checkpoints.length === 0 ? (
-            <EmptyState 
-              title="No checkpoints available"
-              message="State checkpoints will appear here once the audit system is running."
-            />
+          ) : !rounds || rounds.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No finalized rounds available yet
+            </div>
           ) : (
-            <>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Round</TableHead>
-                      <TableHead>State Root</TableHead>
-                      <TableHead>Round Root</TableHead>
-                      <TableHead>Tx Root</TableHead>
-                      <TableHead className="text-center">Verified</TableHead>
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Round</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Round Hash</TableHead>
+                    <TableHead>State Root</TableHead>
+                    <TableHead className="text-right">Blocks</TableHead>
+                    <TableHead className="text-right">Txs</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rounds.map((round) => (
+                    <TableRow key={String(round.round_id)}>
+                      <TableCell>
+                        <Link
+                          href={`/rounds/${round.round_id}`}
+                          className="font-mono font-medium hover:text-emerald-400 transition-colors"
+                        >
+                          #{round.round_id}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={round.status === 'finalized' ? 'default' : 'outline'}
+                          className={round.status === 'finalized' ? '' : 'text-yellow-400'}
+                        >
+                          {round.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {round.hashtimer ? (
+                          <CopyableText value={round.hashtimer} />
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground font-mono text-xs">—</span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {round.block_count ?? 0}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {round.tx_count ?? 0}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {checkpoints.map((checkpoint) => (
-                      <TableRow key={String(checkpoint.round_id)}>
-                        <TableCell>
-                          <Link 
-                            href={`/rounds/${checkpoint.round_id}`}
-                            className="font-mono font-medium hover:text-primary transition-colors"
-                          >
-                            #{checkpoint.round_id}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          {checkpoint.state_root ? (
-                            <CopyableText value={checkpoint.state_root} />
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {checkpoint.round_root ? (
-                            <CopyableText value={checkpoint.round_root} />
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {checkpoint.tx_root ? (
-                            <CopyableText value={checkpoint.tx_root} />
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {checkpoint.verified ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" />
-                          ) : (
-                            <AlertTriangle className="h-4 w-4 text-yellow-600 mx-auto" />
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {hasMore && (
-                <div className="flex justify-center mt-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={loadMore}
-                    disabled={checkpointsLoading}
-                  >
-                    {checkpointsLoading ? 'Loading...' : 'Load More'}
-                  </Button>
-                </div>
-              )}
-            </>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Why This Matters */}
+      {/* Why Replayability Matters */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            Why Replayability Matters
+            Why This Proves Integrity
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-3">
             <div className="space-y-2">
-              <h3 className="font-medium text-sm">Complete Audit Trail</h3>
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-emerald-400" />
+                <h3 className="font-medium text-sm">Hash-Chained Finality</h3>
+              </div>
               <p className="text-sm text-muted-foreground">
-                Every state transition from genesis can be independently verified. 
-                Perfect for regulatory compliance.
+                Every round references its predecessor&apos;s hash. Tampering with any
+                round invalidates all subsequent hashes — providing immutable audit trail.
               </p>
             </div>
             <div className="space-y-2">
-              <h3 className="font-medium text-sm">Deterministic Execution</h3>
+              <div className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-emerald-400" />
+                <h3 className="font-medium text-sm">Durable Persistence</h3>
+              </div>
               <p className="text-sm text-muted-foreground">
-                Same inputs always produce same outputs. No hidden state, 
-                no execution ambiguity.
+                Every finalized round is fsync&apos;d to disk before acknowledgment.
+                Dual consistency proof verifies consensus and storage agree exactly.
               </p>
             </div>
             <div className="space-y-2">
-              <h3 className="font-medium text-sm">Trustless Verification</h3>
+              <div className="flex items-center gap-2">
+                <FileCheck className="h-4 w-4 text-emerald-400" />
+                <h3 className="font-medium text-sm">Deterministic Replay</h3>
+              </div>
               <p className="text-sm text-muted-foreground">
-                Anyone can run the replay and verify the network state 
-                without trusting any single party.
+                HashTimer ordering ensures every transaction has a unique, deterministic
+                position. Same inputs always produce same outputs — no execution ambiguity.
               </p>
             </div>
           </div>
@@ -371,4 +326,52 @@ export default function AuditPage() {
       </Card>
     </div>
   );
+}
+
+// --- Helper Components ---
+
+function VerifyCard({ label, pass, detail }: { label: string; pass: boolean; detail: string }) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-start gap-3">
+          {pass ? (
+            <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+          ) : (
+            <AlertTriangle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+          )}
+          <div>
+            <div className="font-medium text-sm">{label}</div>
+            <p className="text-xs text-muted-foreground mt-1">{detail}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CommitItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="font-mono text-sm font-medium">{value}</span>
+    </div>
+  );
+}
+
+function LatencyStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-center p-2 rounded-lg bg-slate-800/30">
+      <div className="text-xs text-slate-500 uppercase">{label}</div>
+      <div className="text-sm font-mono font-medium mt-1">{value}</div>
+    </div>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }

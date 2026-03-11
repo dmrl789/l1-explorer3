@@ -53,19 +53,34 @@ function makeCacheKey(upstreamBase: string, pathWithQuery: string): string {
   return `${upstreamBase}${pathWithQuery}`;
 }
 
-function setCommonResponseHeaders(res: NextResponse, upstream: string, ms: number): void {
+function setCommonResponseHeaders(
+  res: NextResponse,
+  upstream: string,
+  ms: number,
+  cacheable: boolean
+): void {
   res.headers.set("x-ippan-proxy-upstream", upstream);
   res.headers.set("x-ippan-proxy-ms", String(ms));
   res.headers.set("x-ippan-proxy", "route:/v1/[...path]");
-  // Micro edge caching: helps reduce thundering herd; keep TTL tiny
+
+  // Cache policy:
+  // - If request is "nocache" or otherwise not cacheable, force no-store to avoid stale UI.
+  // - If cacheable, keep TTL tiny to reduce thundering herd.
+  if (!cacheable) {
+    res.headers.set("cache-control", "no-store");
+    return;
+  }
+
+  // Micro edge caching: helps reduce thundering herd; keep TTL tiny.
   // Vercel honors s-maxage/stale-while-revalidate for CDN caching.
   const ttlMs = parseIntEnv("PROXY_CACHE_TTL_MS", 1000);
   const ttl = Math.max(0, Math.floor(ttlMs / 1000));
-  if (ttl > 0) {
-    res.headers.set("cache-control", `public, s-maxage=${ttl}, stale-while-revalidate=${Math.max(1, ttl * 4)}`);
-  } else {
-    res.headers.set("cache-control", "no-store");
-  }
+  res.headers.set(
+    "cache-control",
+    ttl > 0
+      ? `public, s-maxage=${ttl}, stale-while-revalidate=${Math.max(1, ttl * 4)}`
+      : "no-store"
+  );
 }
 
 function cloneSafeHeadersFromUpstream(upstreamRes: Response): [string, string][] {
@@ -114,15 +129,17 @@ export async function proxyV1(req: NextRequest, opts: ProxyOpts = {}): Promise<N
 
   const attempted: Array<{ upstream: string; url: string; err?: string; ms?: number }> = [];
 
+  const cacheable = isCacheable(req) && cacheTtlMs > 0;
+
   // For GET, tiny in-memory cache per instance (in addition to CDN caching)
-  if (isCacheable(req) && cacheTtlMs > 0) {
+  if (cacheable) {
     const key = makeCacheKey(upstreams[0], pathWithQuery); // key by primary upstream for cache hit stability
     const hit = GET_CACHE.get(key);
     if (hit && hit.expiresAt > nowMs()) {
       const res = new NextResponse(hit.body, { status: hit.status });
       for (const [k, v] of hit.headers) res.headers.set(k, v);
       res.headers.set("x-ippan-proxy-cache", "HIT");
-      setCommonResponseHeaders(res, upstreams[0], 0);
+      setCommonResponseHeaders(res, upstreams[0], 0, true);
       return res;
     }
   }
@@ -135,7 +152,15 @@ export async function proxyV1(req: NextRequest, opts: ProxyOpts = {}): Promise<N
   const attempts = Math.max(1, retries + 1);
   for (let attempt = 0; attempt < attempts; attempt++) {
     const upstream = pickUpstream(upstreams, attempt);
-    const url = `${upstream}${pathname}${search}`;
+    // "nocache=1" is an explorer-side hint; do not forward it upstream.
+    let upstreamSearch = search;
+    if (upstreamSearch) {
+      const sp = new URLSearchParams(upstreamSearch.startsWith("?") ? upstreamSearch.slice(1) : upstreamSearch);
+      sp.delete("nocache");
+      const s = sp.toString();
+      upstreamSearch = s ? `?${s}` : "";
+    }
+    const url = `${upstream}${pathname}${upstreamSearch}`;
 
     attempted.push({ upstream, url });
 
@@ -171,10 +196,10 @@ export async function proxyV1(req: NextRequest, opts: ProxyOpts = {}): Promise<N
       const res = new NextResponse(body, { status: upstreamRes.status });
       for (const [k, v] of safeHeaders) res.headers.set(k, v);
 
-      setCommonResponseHeaders(res, upstream, ms);
+      setCommonResponseHeaders(res, upstream, ms, cacheable);
       res.headers.set("x-ippan-proxy-cache", "MISS");
 
-      if (method === "GET" && upstreamRes.ok && isCacheable(req) && cacheTtlMs > 0) {
+      if (method === "GET" && upstreamRes.ok && cacheable) {
         const expiresAt = nowMs() + cacheTtlMs;
         const key = makeCacheKey(upstreams[0], pathWithQuery);
         GET_CACHE.set(key, { expiresAt, status: upstreamRes.status, headers: safeHeaders, body });

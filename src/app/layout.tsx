@@ -28,6 +28,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const upstream =
+    (process.env.UPSTREAM_V1_BASES ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)[0] ??
+    process.env.NEXT_PUBLIC_UPSTREAM_RPC_BASE ??
+    process.env.UPSTREAM_RPC_BASE;
+
   return (
     <html lang="en">
       <body className={`${inter.variable} bg-[#131a24] text-slate-100 antialiased font-sans`}>
@@ -36,7 +44,7 @@ export default function RootLayout({
           <main className="mx-auto w-full max-w-7xl px-3 pb-24 pt-4 sm:px-4 sm:pt-6 sm:pb-28 lg:pb-12 lg:px-8 lg:pt-8">
             {children}
           </main>
-          <Footer />
+          <Footer upstream={upstream} />
         </div>
       </body>
     </html>
