@@ -183,9 +183,9 @@ export default function Dashboard() {
                   No blocks available
                 </p>
               ) : (
-                blocks.slice(0, 6).map((block) => (
+                blocks.slice(0, 6).map((block, idx) => (
                   <Link
-                    key={block.block_id}
+                    key={`${block.block_id}-${idx}`}
                     href={`/blocks/${block.block_id}`}
                     className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 hover:bg-slate-700/30 active:bg-slate-700/40 rounded-lg transition-colors group"
                   >

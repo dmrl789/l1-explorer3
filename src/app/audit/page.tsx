@@ -238,8 +238,8 @@ export default function AuditPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rounds.map((round) => (
-                    <TableRow key={String(round.round_id)}>
+                  {rounds.map((round, idx) => (
+                    <TableRow key={`${round.round_id}-${idx}`}>
                       <TableCell>
                         <Link
                           href={`/rounds/${round.round_id}`}
