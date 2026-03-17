@@ -137,18 +137,20 @@ export default function TransactionDetailPage({ params }: PageProps) {
         <div className="min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold tracking-tight">Transaction</h1>
-            <Badge variant="outline" className="capitalize">
-              {transaction.type}
-            </Badge>
-            <Badge 
-              variant={transaction.finalized ? 'default' : 'outline'}
+            <Badge
+              variant="outline"
               className={cn(
-                transaction.finalized 
-                  ? 'bg-green-500/10 text-green-600 border-green-500/20' 
-                  : ''
+                'capitalize',
+                transaction.type === 'mempool' ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' :
+                transaction.type === 'finalized' ? 'bg-green-500/10 text-green-600 border-green-500/20' :
+                transaction.type === 'included' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' :
+                ''
               )}
             >
-              {transaction.finalized ? 'Finalized' : 'Pending'}
+              {transaction.type === 'mempool' ? 'In Mempool' :
+               transaction.type === 'finalized' ? 'Finalized' :
+               transaction.type === 'included' ? 'Included' :
+               transaction.type}
             </Badge>
           </div>
           <div className="flex items-center gap-2 mt-2 text-muted-foreground">
@@ -226,7 +228,7 @@ export default function TransactionDetailPage({ params }: PageProps) {
                       </p>
                       {event?.timestamp && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(event.timestamp).toLocaleString()}
+                          {new Date(event.timestamp > 1e15 ? event.timestamp / 1000 : event.timestamp).toLocaleString()}
                         </p>
                       )}
                     </div>
@@ -305,16 +307,34 @@ export default function TransactionDetailPage({ params }: PageProps) {
             {transaction.receiver && (
               <HashDisplay hash={transaction.receiver} label="To" />
             )}
-            {transaction.size_bytes && (
+            {transaction.amount && (
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Size</span>
-                <span className="text-sm">{transaction.size_bytes} bytes</span>
+                <span className="text-sm text-muted-foreground">Amount</span>
+                <span className="text-sm font-mono">{transaction.amount} atomic</span>
+              </div>
+            )}
+            {transaction.fee && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Fee</span>
+                <span className="text-sm font-mono">{transaction.fee} atomic</span>
               </div>
             )}
             {transaction.nonce !== undefined && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Nonce</span>
                 <span className="text-sm font-mono">{transaction.nonce}</span>
+              </div>
+            )}
+            {transaction.memo && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Memo</span>
+                <span className="text-sm font-mono">{transaction.memo}</span>
+              </div>
+            )}
+            {transaction.size_bytes && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Size</span>
+                <span className="text-sm">{transaction.size_bytes} bytes</span>
               </div>
             )}
           </CardContent>

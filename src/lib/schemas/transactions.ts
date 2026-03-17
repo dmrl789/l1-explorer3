@@ -24,9 +24,13 @@ export const TxSummarySchema = z.object({
   tx_id: z.string(),
   hashtimer: z.string().optional(),
   type: TxTypeSchema,
+  status: z.string().optional(),
   finalized: z.boolean().optional().default(false),
   round_id: z.union([z.string(), z.number()]).optional(),
   block_id: z.string().optional(),
+  from: z.string().optional(),
+  to: z.string().optional(),
+  amount: z.string().optional(),
   timestamp: z.number().optional(),
   created_at: z.string().optional(),
 });
@@ -38,9 +42,10 @@ export const TxDetailSchema = TxSummarySchema.extend({
   receiver: z.string().optional(),
   payload_hash: z.string().optional(),
   size_bytes: z.number().optional(),
-  fee: z.number().optional(),
+  fee: z.string().optional(),
   nonce: z.number().optional(),
   signature: z.string().optional(),
+  memo: z.string().optional(),
 });
 
 export const TxListResponseSchema = z.object({
@@ -85,14 +90,43 @@ export function normalizeTxList(raw: unknown): TxListResponse {
 
 export function normalizeTxSummary(raw: unknown): TxSummary {
   const data = raw as Record<string, unknown>;
-  
+
+  // Map status from upstream — upstream uses "status"/"status_v2" while
+  // the explorer schema used "type". We normalise both to a human-friendly label.
+  const rawStatus = String(data.status_v2 ?? data.status ?? data.type ?? data.tx_type ?? data.txType ?? 'unknown');
+  const statusLower = rawStatus.toLowerCase();
+
+  // Derive "type" as a display-friendly label from the raw status
+  let type = 'unknown';
+  if (statusLower.includes('mempool') || statusLower === 'accepted_to_mempool') {
+    type = 'mempool';
+  } else if (statusLower.includes('finalized') || statusLower.includes('confirmed')) {
+    type = 'finalized';
+  } else if (statusLower.includes('pending')) {
+    type = 'pending';
+  } else if (statusLower.includes('included') || statusLower.includes('block')) {
+    type = 'included';
+  } else if (statusLower !== 'unknown' && rawStatus !== '') {
+    type = rawStatus;
+  }
+
+  // Derive finalized boolean
+  const finalized = Boolean(
+    data.finalized ?? data.is_finalized ?? data.final ??
+    (statusLower.includes('finalized') || statusLower.includes('confirmed'))
+  );
+
   return {
     tx_id: String(data.tx_id ?? data.id ?? data.hash ?? data.txId ?? ''),
     hashtimer: (data.hashtimer ?? data.hash_timer) as string | undefined,
-    type: String(data.type ?? data.tx_type ?? data.txType ?? 'unknown'),
-    finalized: Boolean(data.finalized ?? data.is_finalized ?? data.final),
+    type,
+    status: rawStatus,
+    finalized,
     round_id: (data.round_id ?? data.round) as string | number | undefined,
     block_id: (data.block_id ?? data.block) as string | undefined,
+    from: (data.from ?? data.sender ?? data.origin) as string | undefined,
+    to: (data.to ?? data.receiver ?? data.destination) as string | undefined,
+    amount: (data.amount ?? data.amount_atomic) as string | undefined,
     timestamp: data.timestamp as number | undefined,
     created_at: (data.created_at ?? data.createdAt ?? data.time) as string | undefined,
   };
@@ -101,22 +135,37 @@ export function normalizeTxSummary(raw: unknown): TxSummary {
 export function normalizeTxDetail(raw: unknown): TxDetail {
   const summary = normalizeTxSummary(raw);
   const data = raw as Record<string, unknown>;
-  
+
   const lifecycleRaw = data.lifecycle ?? data.events ?? data.stages ?? [];
-  
+
+  // Build lifecycle from explicit lifecycle array or synthesize from status fields
+  let lifecycle = Array.isArray(lifecycleRaw) && lifecycleRaw.length > 0
+    ? lifecycleRaw.map(normalizeLifecycleEvent)
+    : buildLifecycleFromFields(data);
+
+  // If still empty, infer from the status
+  if (lifecycle.length === 0) {
+    const statusStr = String(data.status ?? data.status_v2 ?? '').toLowerCase();
+    if (statusStr.includes('mempool') || statusStr === 'accepted_to_mempool') {
+      lifecycle = [
+        { stage: 'ingress_checked', timestamp: data.first_seen_ts as number | undefined ?? data.timestamp as number | undefined },
+        { stage: 'hashtimer_assigned', timestamp: data.timestamp as number | undefined },
+      ];
+    }
+  }
+
   return {
     ...summary,
-    lifecycle: Array.isArray(lifecycleRaw) 
-      ? lifecycleRaw.map(normalizeLifecycleEvent) 
-      : buildLifecycleFromFields(data),
+    lifecycle,
     total_latency_ms: (data.total_latency_ms ?? data.latency) as number | undefined,
     sender: (data.sender ?? data.from ?? data.origin) as string | undefined,
     receiver: (data.receiver ?? data.to ?? data.destination) as string | undefined,
     payload_hash: (data.payload_hash ?? data.payloadHash ?? data.dataHash) as string | undefined,
     size_bytes: (data.size_bytes ?? data.size) as number | undefined,
-    fee: data.fee as number | undefined,
+    fee: (data.fee_atomic ?? data.fee) as string | undefined,
     nonce: data.nonce as number | undefined,
     signature: data.signature as string | undefined,
+    memo: (data.memo ?? data.topics) as string | undefined,
   };
 }
 

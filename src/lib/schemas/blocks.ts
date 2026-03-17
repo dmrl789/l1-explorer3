@@ -123,7 +123,7 @@ export function normalizeBlockDetail(raw: unknown): BlockDetail {
     parents: Array.isArray(parents) ? parents.map(String) : [],
     children: Array.isArray(children) ? children.map(String) : [],
     transactions: Array.isArray(transactions) ? transactions.map(String) : [],
-    proposer: (data.proposer ?? data.producer ?? data.validator) as string | undefined,
+    proposer: (data.proposer ?? data.producer ?? data.validator ?? data.creator) as string | undefined,
     size_bytes: (data.size_bytes ?? data.size) as number | undefined,
     deterministic_position: (data.deterministic_position ?? data.position) as number | undefined,
     state_root: (data.state_root ?? data.stateRoot) as string | undefined,

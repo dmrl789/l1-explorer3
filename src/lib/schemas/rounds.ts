@@ -88,18 +88,31 @@ export function normalizeRoundsList(raw: unknown): RoundsListResponse {
   };
 }
 
-export function normalizeRoundSummary(raw: unknown): RoundSummary {
+/**
+ * Flatten the upstream round object — the IPPAN API wraps most fields
+ * inside a `header` sub-object.  We merge `header` into the top-level so
+ * the rest of the normalizer can work with a flat record.
+ */
+function flattenRound(raw: unknown): Record<string, unknown> {
   const data = raw as Record<string, unknown>;
-  const blocksArr = data.blocks as unknown[] | undefined;
-  
+  if (data.header && typeof data.header === 'object') {
+    return { ...data, ...(data.header as Record<string, unknown>) };
+  }
+  return data;
+}
+
+export function normalizeRoundSummary(raw: unknown): RoundSummary {
+  const data = flattenRound(raw);
+  const blocksArr = (data.included_blocks ?? data.blocks ?? data.block_ids) as unknown[] | undefined;
+
   return {
     round_id: (data.round_id ?? data.id ?? data.round ?? '') as string | number,
-    hashtimer: (data.hashtimer ?? data.hash_timer) as string | undefined,
+    hashtimer: (data.round_hashtimer ?? data.hashtimer ?? data.hash_timer) as string | undefined,
     status: normalizeRoundStatus(data.status ?? data.state),
     finality_ms: (data.finality_ms ?? data.finality) as number | undefined,
     block_count: Number(data.block_count ?? blocksArr?.length ?? data.blockCount ?? 0),
     tx_count: Number(data.tx_count ?? data.transaction_count ?? data.txCount ?? 0),
-    timestamp: data.timestamp as number | undefined,
+    timestamp: (data.window_end_us ?? data.timestamp) as number | undefined,
     created_at: (data.created_at ?? data.createdAt ?? data.time) as string | undefined,
   };
 }
@@ -117,23 +130,23 @@ function normalizeRoundStatus(raw: unknown): RoundStatus {
 
 export function normalizeRoundDetail(raw: unknown): RoundDetail {
   const summary = normalizeRoundSummary(raw);
-  const data = raw as Record<string, unknown>;
-  
-  const blocksRaw = data.blocks ?? data.block_ids ?? [];
+  const data = flattenRound(raw);
+
+  const blocksRaw = data.included_blocks ?? data.blocks ?? data.block_ids ?? [];
   const participantsRaw = data.participants ?? data.validators ?? data.signers ?? [];
-  
+
   return {
     ...summary,
     blocks: Array.isArray(blocksRaw) ? blocksRaw.map(String) : [],
-    participants: Array.isArray(participantsRaw) 
-      ? participantsRaw.map(normalizeParticipant) 
+    participants: Array.isArray(participantsRaw)
+      ? participantsRaw.map(normalizeParticipant)
       : [],
     proof: normalizeProof(data.proof ?? data.certificate),
-    proposed_at: (data.proposed_at ?? data.proposedAt) as number | undefined,
+    proposed_at: (data.proposed_at ?? data.proposedAt ?? data.window_start_us) as number | undefined,
     verified_at: (data.verified_at ?? data.verifiedAt) as number | undefined,
-    finalized_at: (data.finalized_at ?? data.finalizedAt) as number | undefined,
+    finalized_at: (data.finalized_at ?? data.finalizedAt ?? data.window_end_us) as number | undefined,
     state_root: (data.state_root ?? data.stateRoot) as string | undefined,
-    round_root: (data.round_root ?? data.roundRoot) as string | undefined,
+    round_root: (data.round_root ?? data.roundRoot ?? data.round_hash) as string | undefined,
   };
 }
 

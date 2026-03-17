@@ -63,9 +63,9 @@ export default function TransactionsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Transaction ID</TableHead>
+                      <TableHead>From / To</TableHead>
+                      <TableHead>Amount</TableHead>
                       <TableHead>HashTimer</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Round</TableHead>
                       <TableHead className="text-center">Status</TableHead>
                       <TableHead className="text-right">Age</TableHead>
                     </TableRow>
@@ -84,47 +84,65 @@ export default function TransactionsPage() {
                           </Link>
                         </TableCell>
                         <TableCell>
+                          {tx.from ? (
+                            <div className="space-y-0.5">
+                              <div className="font-mono text-xs text-muted-foreground">
+                                {tx.from.slice(0, 8)}…{tx.from.slice(-4)}
+                              </div>
+                              {tx.to && (
+                                <div className="font-mono text-xs">
+                                  → {tx.to.slice(0, 8)}…{tx.to.slice(-4)}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {tx.amount ? (
+                            <span className="font-mono text-sm">{tx.amount}</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           {tx.hashtimer ? (
                             <CopyableText value={tx.hashtimer} />
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {tx.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {tx.round_id ? (
-                            <Link 
-                              href={`/rounds/${tx.round_id}`}
-                              className="hover:text-primary transition-colors"
-                            >
-                              #{tx.round_id}
-                            </Link>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
                         <TableCell className="text-center">
-                          <Badge 
+                          <Badge
                             variant={tx.finalized ? 'default' : 'outline'}
                             className={cn(
-                              tx.finalized 
-                                ? 'bg-green-500/10 text-green-600 border-green-500/20' 
-                                : ''
+                              tx.finalized
+                                ? 'bg-green-500/10 text-green-600 border-green-500/20'
+                                : tx.type === 'mempool'
+                                  ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20'
+                                  : ''
                             )}
                           >
-                            {tx.finalized ? 'Finalized' : 'Pending'}
+                            {tx.finalized ? 'Finalized' :
+                             tx.type === 'mempool' ? 'Mempool' :
+                             tx.type === 'included' ? 'Included' :
+                             tx.type === 'unknown' ? 'Pending' :
+                             tx.type}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          {tx.timestamp 
-                            ? formatDistanceToNow(new Date(tx.timestamp), { addSuffix: true })
-                            : tx.created_at
-                              ? formatDistanceToNow(new Date(tx.created_at), { addSuffix: true })
-                              : '—'}
+                          {(() => {
+                            // Upstream timestamps are in microseconds (µs) — convert to ms
+                            if (tx.timestamp) {
+                              const ms = tx.timestamp > 1e15 ? tx.timestamp / 1000 : tx.timestamp;
+                              return formatDistanceToNow(new Date(ms), { addSuffix: true });
+                            }
+                            if (tx.created_at) {
+                              return formatDistanceToNow(new Date(tx.created_at), { addSuffix: true });
+                            }
+                            return '—';
+                          })()}
                         </TableCell>
                       </TableRow>
                     ))}

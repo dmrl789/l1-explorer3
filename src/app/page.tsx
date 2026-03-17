@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import IppanTimeTicker from "@/components/IppanTimeTicker";
 import { getStatus } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 function fmt(n: number | undefined | null): string {
   if (typeof n !== "number" || !Number.isFinite(n)) return "—";
@@ -245,14 +246,30 @@ export default function Dashboard() {
                     href={`/tx/${tx.tx_id}`}
                     className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 hover:bg-slate-700/30 active:bg-slate-700/40 rounded-lg transition-colors group"
                   >
-                    <code className="text-xs sm:text-sm font-mono text-slate-300 group-hover:text-emerald-300 transition-colors truncate min-w-0">
-                      {truncateId(tx.tx_id, 12)}
-                    </code>
-                    <Badge 
+                    <div className="min-w-0">
+                      <code className="text-xs sm:text-sm font-mono text-slate-300 group-hover:text-emerald-300 transition-colors truncate block">
+                        {truncateId(tx.tx_id, 12)}
+                      </code>
+                      {tx.from && (
+                        <span className="text-[10px] text-slate-500">
+                          {tx.from.slice(0, 6)}… → {tx.to?.slice(0, 6) ?? '?'}…
+                        </span>
+                      )}
+                    </div>
+                    <Badge
                       variant={tx.finalized ? "success" : "secondary"}
-                      className="text-[9px] sm:text-[10px] shrink-0 ml-2"
+                      className={cn(
+                        "text-[9px] sm:text-[10px] shrink-0 ml-2",
+                        tx.type === 'mempool' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                        tx.type === 'finalized' ? "" :
+                        ""
+                      )}
                     >
-                      {tx.finalized ? "Finalized" : tx.type || "Pending"}
+                      {tx.finalized ? "Finalized" :
+                       tx.type === 'mempool' ? "Mempool" :
+                       tx.type === 'included' ? "Included" :
+                       tx.type === 'unknown' ? "Pending" :
+                       tx.type || "Pending"}
                     </Badge>
                   </Link>
                 ))

@@ -134,7 +134,7 @@ export default function RoundDetailPage({ params }: PageProps) {
                   <span className="text-sm font-medium mt-2">{step.label}</span>
                   {step.timestamp && (
                     <span className="text-xs text-muted-foreground">
-                      {new Date(step.timestamp).toLocaleTimeString()}
+                      {new Date(step.timestamp > 1e15 ? step.timestamp / 1000 : step.timestamp).toLocaleTimeString()}
                     </span>
                   )}
                 </div>
