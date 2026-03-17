@@ -1,6 +1,7 @@
 /**
  * Shared upstream resolution for all route handlers.
- * Reads UPSTREAM_V1_BASES env var; falls back to IPPAN devnet defaults.
+ * Devnet nodes are always included as primary upstreams.
+ * UPSTREAM_V1_BASES env var adds additional upstreams (appended after devnet).
  * Server-side only (runs in Next.js API routes, not browser), so HTTP is fine.
  */
 
@@ -12,13 +13,26 @@ const DEVNET_UPSTREAMS = [
 ];
 
 export function getUpstreams(): string[] {
+  // Devnet nodes are always primary — this is a devnet explorer.
+  const all = [...DEVNET_UPSTREAMS];
+  const set = new Set(all);
+
+  // Append any additional upstreams from env var (e.g. production gateway).
   const raw = (process.env.UPSTREAM_V1_BASES ?? "").trim();
-  const list = raw
+  const extras = raw
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
     .map((s) => s.replace(/\/+$/, ""));
-  return list.length ? list : DEVNET_UPSTREAMS;
+
+  for (const u of extras) {
+    if (!set.has(u)) {
+      all.push(u);
+      set.add(u);
+    }
+  }
+
+  return all;
 }
 
 export function getFirstUpstream(): string {
