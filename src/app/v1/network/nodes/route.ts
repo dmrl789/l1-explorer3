@@ -14,6 +14,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { getFirstUpstream } from "@/lib/upstreams";
 
 export const dynamic = "force-dynamic";
 
@@ -46,12 +47,6 @@ function parseIntEnv(name: string, fallback: number): number {
   if (!raw) return fallback;
   const n = Number(raw);
   return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : fallback;
-}
-
-function getUpstream(): string {
-  const raw = (process.env.UPSTREAM_V1_BASES ?? "").trim();
-  const first = raw.split(",")[0]?.trim() ?? "";
-  return first.replace(/\/+$/, "");
 }
 
 function extractValidators(data: Record<string, unknown>): ValidatorNode[] {
@@ -88,7 +83,7 @@ function extractValidators(data: Record<string, unknown>): ValidatorNode[] {
 }
 
 async function refreshSnapshot(): Promise<void> {
-  const upstream = getUpstream();
+  const upstream = getFirstUpstream();
   if (!upstream) return;
 
   const timeoutMs = parseIntEnv("NETWORK_NODES_SNAPSHOT_TIMEOUT_MS", 8000);
@@ -96,8 +91,8 @@ async function refreshSnapshot(): Promise<void> {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    // Fetch status directly from upstream with explicit URL
-    const url = `https://api2.ippan.uk/v1/status`;
+    // Fetch status from upstream to extract validator info
+    const url = `${upstream}/v1/status`;
 
     const res = await fetch(url, {
       method: "GET",

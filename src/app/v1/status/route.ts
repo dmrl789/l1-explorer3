@@ -9,6 +9,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { getUpstreams } from "@/lib/upstreams";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -34,17 +35,8 @@ function parseIntEnv(name: string, fallback: number): number {
   return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : fallback;
 }
 
-function upstreams(): string[] {
-  const raw = (process.env.UPSTREAM_V1_BASES ?? "").trim();
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((s) => s.replace(/\/+$/, ""));
-}
-
 async function refreshSnapshot(): Promise<void> {
-  const ups = upstreams();
+  const ups = getUpstreams();
   if (!ups.length) return;
 
   // pick first upstream for status; keep it simple and deterministic

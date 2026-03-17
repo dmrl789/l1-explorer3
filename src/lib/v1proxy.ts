@@ -2,6 +2,7 @@
 /* Hardened /v1 proxy: timeout, retries, upstream fallback, tiny GET cache, debug headers */
 
 import { NextRequest, NextResponse } from "next/server";
+import { getUpstreams } from "./upstreams";
 
 type CacheEntry = { expiresAt: number; status: number; headers: [string, string][]; body: string };
 
@@ -21,25 +22,6 @@ function parseIntEnv(name: string, fallback: number): number {
   if (!raw) return fallback;
   const n = Number(raw);
   return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : fallback;
-}
-
-// IPPAN devnet defaults — used when UPSTREAM_V1_BASES is not set (e.g. fresh Vercel deploy).
-// Server-side only (runs in Next.js API route, not browser), so HTTP is fine.
-const DEVNET_UPSTREAMS = [
-  "http://103.75.118.228:8080", // Tokyo
-  "http://172.245.233.71:8080", // New York
-  "http://51.158.157.222:8080", // Amsterdam
-  "http://136.243.59.218:8080", // Falkenstein
-];
-
-function getUpstreams(): string[] {
-  const raw = (process.env.UPSTREAM_V1_BASES ?? "").trim();
-  const list = raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((s) => s.replace(/\/+$/, "")); // trim trailing slashes
-  return list.length ? list : DEVNET_UPSTREAMS;
 }
 
 function pickUpstream(upstreams: string[], attempt: number): string {

@@ -11,6 +11,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { getFirstUpstream } from "@/lib/upstreams";
 
 export const dynamic = "force-dynamic";
 
@@ -34,14 +35,8 @@ function parseIntEnv(name: string, fallback: number): number {
   return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : fallback;
 }
 
-function getUpstream(): string {
-  const raw = (process.env.UPSTREAM_V1_BASES ?? "").trim();
-  const first = raw.split(",")[0]?.trim() ?? "";
-  return first.replace(/\/+$/, "");
-}
-
 async function refreshSnapshot(limit: string): Promise<void> {
-  const upstream = getUpstream();
+  const upstream = getFirstUpstream();
   if (!upstream) return;
 
   const timeoutMs = parseIntEnv("FINALITY_SNAPSHOT_TIMEOUT_MS", 15000);
