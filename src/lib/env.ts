@@ -28,10 +28,11 @@ export function getApiBases(): string[] {
     }
   }
   
-  // Defaults (mainly for SSR/tools). Prefer a "fast" upstream, with a safe fallback.
+  // Defaults: if no env-configured bases, use same-origin (browser) or empty (SSR).
+  // Browser-side requests always go through same-origin /v1/* → Next.js API route → proxy.
+  // SSR should not make direct client API calls; the proxy handles upstream routing.
   if (bases.length === 0) {
-    bases.push('http://api2.ippan.uk');
-    bases.push('http://api1.ippan.uk');
+    bases.push('');
   }
   
   return bases;
