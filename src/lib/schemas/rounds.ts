@@ -108,7 +108,7 @@ export function normalizeRoundSummary(raw: unknown): RoundSummary {
   return {
     round_id: (data.round_id ?? data.id ?? data.round ?? '') as string | number,
     hashtimer: (data.round_hashtimer ?? data.hashtimer ?? data.hash_timer) as string | undefined,
-    status: normalizeRoundStatus(data.status ?? data.state),
+    status: normalizeRoundStatus(data.status ?? data.state, data),
     finality_ms: (data.finality_ms ?? data.finality) as number | undefined,
     block_count: Number(data.block_count ?? blocksArr?.length ?? data.blockCount ?? 0),
     tx_count: Number(data.tx_count ?? data.transaction_count ?? data.txCount ?? 0),
@@ -117,7 +117,7 @@ export function normalizeRoundSummary(raw: unknown): RoundSummary {
   };
 }
 
-function normalizeRoundStatus(raw: unknown): RoundStatus {
+function normalizeRoundStatus(raw: unknown, data?: Record<string, unknown>): RoundStatus {
   if (typeof raw === 'string') {
     const lower = raw.toLowerCase();
     if (lower === 'proposed' || lower === 'pending') return 'proposed';
@@ -125,6 +125,19 @@ function normalizeRoundStatus(raw: unknown): RoundStatus {
     if (lower === 'finalized' || lower === 'final' || lower === 'complete') return 'finalized';
     if (lower === 'failed' || lower === 'error') return 'failed';
   }
+
+  // Infer status from structural data when upstream doesn't provide an
+  // explicit status field.  A round with a state_root and included blocks
+  // has been finalized by consensus.
+  if (data) {
+    const hasStateRoot = !!data.state_root;
+    const hasBlocks = Array.isArray(data.included_blocks ?? data.blocks) &&
+      ((data.included_blocks ?? data.blocks) as unknown[]).length > 0;
+    if (hasStateRoot && hasBlocks) return 'finalized';
+    if (hasBlocks) return 'verified';
+    if (data.round_id !== undefined) return 'proposed';
+  }
+
   return 'unknown';
 }
 
