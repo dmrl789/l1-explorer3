@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import { listBlocks, getBlock, type BlocksListResponse, type BlockDetail } from '../api';
 
-const BLOCKS_REFRESH_INTERVAL = 5000; // 5 seconds
+const BLOCKS_REFRESH_INTERVAL = 3000; // 3 seconds
 
 export function useBlocks(limit: number = 20) {
   const { data, error, isLoading, isValidating, mutate } = useSWR<BlocksListResponse & { _empty_warning?: boolean }>(
@@ -45,7 +45,11 @@ export function useBlocksInfinite(limit: number = 20) {
     }
   );
 
-  const blocks = data ? data.flatMap(page => page.blocks) : [];
+  const blocks = data
+    ? data
+        .flatMap(page => page.blocks)
+        .sort((a, b) => (b.ippan_time ?? b.timestamp ?? 0) - (a.ippan_time ?? a.timestamp ?? 0))
+    : [];
   const hasMore = data ? data[data.length - 1]?.has_more ?? false : false;
 
   return {

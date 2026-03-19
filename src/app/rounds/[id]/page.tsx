@@ -19,6 +19,7 @@ import { DetailPageSkeleton } from '@/components/skeletons';
 import { ErrorState } from '@/components/error-state';
 import { CopyableText, HashDisplay } from '@/components/copy-button';
 import { cn } from '@/lib/utils';
+import { microsToDate } from '@/lib/time';
 import type { RoundStatus } from '@/lib/schemas';
 
 const statusColors: Record<RoundStatus, string> = {
@@ -134,7 +135,7 @@ export default function RoundDetailPage({ params }: PageProps) {
                   <span className="text-sm font-medium mt-2">{step.label}</span>
                   {step.timestamp && (
                     <span className="text-xs text-muted-foreground">
-                      {new Date(step.timestamp > 1e15 ? step.timestamp / 1000 : step.timestamp).toLocaleTimeString()}
+                      {microsToDate(step.timestamp)?.toLocaleTimeString() ?? '—'}
                     </span>
                   )}
                 </div>

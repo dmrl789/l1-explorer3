@@ -18,6 +18,7 @@ import { TableSkeleton } from '@/components/skeletons';
 import { ErrorState, EmptyState } from '@/components/error-state';
 import { CopyableText } from '@/components/copy-button';
 import { cn } from '@/lib/utils';
+import { microsToDate } from '@/lib/time';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function TransactionsPage() {
@@ -133,10 +134,11 @@ export default function TransactionsPage() {
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
                           {(() => {
-                            // Upstream timestamps are in microseconds (µs) — convert to ms
                             if (tx.timestamp) {
-                              const ms = tx.timestamp > 1e15 ? tx.timestamp / 1000 : tx.timestamp;
-                              return formatDistanceToNow(new Date(ms), { addSuffix: true });
+                              const canonicalDate = microsToDate(tx.timestamp);
+                              if (canonicalDate) {
+                                return formatDistanceToNow(canonicalDate, { addSuffix: true });
+                              }
                             }
                             if (tx.created_at) {
                               return formatDistanceToNow(new Date(tx.created_at), { addSuffix: true });

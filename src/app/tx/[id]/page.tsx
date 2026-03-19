@@ -21,6 +21,7 @@ import { DetailPageSkeleton } from '@/components/skeletons';
 import { ErrorState } from '@/components/error-state';
 import { CopyableText, HashDisplay } from '@/components/copy-button';
 import { cn } from '@/lib/utils';
+import { microsToDate } from '@/lib/time';
 import type { TxLifecycleStage } from '@/lib/schemas';
 
 interface PageProps {
@@ -228,7 +229,7 @@ export default function TransactionDetailPage({ params }: PageProps) {
                       </p>
                       {event?.timestamp && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(event.timestamp > 1e15 ? event.timestamp / 1000 : event.timestamp).toLocaleString()}
+                          {microsToDate(event.timestamp)?.toLocaleString() ?? '—'}
                         </p>
                       )}
                     </div>
