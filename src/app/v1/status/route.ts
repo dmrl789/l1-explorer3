@@ -1,11 +1,11 @@
 /* src/app/v1/status/route.ts */
 /**
  * Cached status snapshot.
- * - Fetch upstream /v1/status in the background-ish (on request) with long timeout.
- * - Serve last-known-good snapshot immediately.
+ * - Refresh stale snapshots synchronously with bounded timeout + upstream fallback.
+ * - Serve last-known-good snapshot only when every upstream refresh attempt fails.
  * - Refresh at most once per STATUS_TTL_MS window.
  *
- * This prevents the explorer from hanging if upstream /v1/status is heavy (15–60s).
+ * This keeps public status truthful while still shielding the UI from upstream outages.
  */
 
 import { NextResponse } from "next/server";
@@ -38,44 +38,42 @@ function parseIntEnv(name: string, fallback: number): number {
 async function refreshSnapshot(): Promise<void> {
   const ups = getUpstreams();
   if (!ups.length) return;
+  const timeoutMs = parseIntEnv("STATUS_SNAPSHOT_TIMEOUT_MS", 3500);
+  const headers: Record<string, string> = { accept: "application/json" };
+  const key = (process.env.EXPLORER_PROXY_KEY ?? "").trim();
+  if (key) headers["x-ippan-explorer-key"] = key;
 
-  // pick first upstream for status; keep it simple and deterministic
-  const upstream = ups[0];
-  const url = `${upstream}/v1/status`;
+  for (const upstream of ups) {
+    const url = `${upstream}/v1/status`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        method: "GET",
+        headers,
+        signal: controller.signal,
+        cache: "no-store",
+      });
 
-  const timeoutMs = parseIntEnv("STATUS_SNAPSHOT_TIMEOUT_MS", 65000); // long, but not used often
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+      const body = await res.text();
+      if (!res.ok) {
+        continue;
+      }
 
-  try {
-    const headers: Record<string, string> = { accept: "application/json" };
-    const key = (process.env.EXPLORER_PROXY_KEY ?? "").trim();
-    if (key) headers["x-ippan-explorer-key"] = key;
-
-    const res = await fetch(url, {
-      method: "GET",
-      headers,
-      signal: controller.signal,
-      cache: "no-store",
-    });
-
-    const body = await res.text();
-
-    // only store if it looks like JSON and succeeded
-    if (res.ok) {
       SNAPSHOT = { fetchedAt: nowMs(), upstream, status: res.status, body };
+      return;
+    } catch {
+      // try next upstream
+    } finally {
+      clearTimeout(timer);
     }
-  } catch {
-    // swallow errors: we keep last-known-good snapshot
-  } finally {
-    clearTimeout(timer);
   }
 }
 
 export async function GET() {
   // Keep this tiny: the UI polls frequently and should not appear "stuck".
   // Still provides protection against very heavy upstream /v1/status responses.
-  const ttlMs = parseIntEnv("STATUS_SNAPSHOT_TTL_MS", 1000);
+  const ttlMs = Math.min(parseIntEnv("STATUS_SNAPSHOT_TTL_MS", 1000), 3000);
 
   const isFresh = SNAPSHOT && nowMs() - SNAPSHOT.fetchedAt < ttlMs;
 
@@ -86,19 +84,21 @@ export async function GET() {
     });
   }
 
-  // If no snapshot exists yet, WAIT for the first fetch to complete (blocking)
-  // This ensures serverless instances actually populate the cache before returning
-  if (!SNAPSHOT && INFLIGHT) {
+  // If we don't have a fresh snapshot, wait for the in-flight refresh before replying.
+  // This avoids serving stale status when the upstream is healthy and responsive.
+  if ((!isFresh || !SNAPSHOT) && INFLIGHT) {
     await INFLIGHT;
   }
 
-  // If we have a snapshot, return it immediately
+  // If we have a snapshot, return it.
   if (SNAPSHOT) {
+    const snapshotIsFresh = nowMs() - SNAPSHOT.fetchedAt < ttlMs;
     const res = new NextResponse(SNAPSHOT.body, { status: 200 });
     res.headers.set("content-type", "application/json; charset=utf-8");
     res.headers.set("x-ippan-status-source", "snapshot");
     res.headers.set("x-ippan-status-upstream", SNAPSHOT.upstream);
     res.headers.set("x-ippan-status-age-ms", String(nowMs() - SNAPSHOT.fetchedAt));
+    res.headers.set("x-ippan-status-stale", snapshotIsFresh ? "0" : "1");
     // Absolutely no caching for time/status. This prevents browser/CDN/ISR from
     // serving stale status snapshots which can make IPPAN Time look like it
     // updates only every few seconds (or worse).
