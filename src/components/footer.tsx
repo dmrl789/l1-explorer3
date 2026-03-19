@@ -10,11 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import { getApiBase } from '@/lib/env';
 
-export function Footer({ upstream }: { upstream?: string }) {
-  const apiBase = getApiBase();
-  const upstreamShown = upstream ?? "(not configured)";
+export function Footer({ upstreamLabel }: { upstreamLabel?: string }) {
+  const upstreamShown = upstreamLabel ?? "(not configured)";
 
   return (
     <footer className="border-t border-slate-700/30 bg-[#151c28]">
@@ -23,9 +21,9 @@ export function Footer({ upstream }: { upstream?: string }) {
           <div className="text-center sm:text-left">
             <p className="text-xs text-slate-500">© 2026 IPPAN - All Rights Reserved.</p>
             <p className="mt-1 text-[11px] text-slate-600">
-              API base: <code className="font-mono">{apiBase === '' ? '(same-origin)' : apiBase}</code>
+              API routes: <code className="font-mono">/v1/* (same-origin proxy)</code>
               {' · '}
-              upstream: <code className="font-mono">{upstreamShown}</code>
+              upstreams: <code className="font-mono">{upstreamShown}</code>
             </p>
           </div>
           <Dialog>

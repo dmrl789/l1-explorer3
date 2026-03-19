@@ -101,9 +101,9 @@ export default function NetworkPage() {
       </div>
 
       {/* KPI Grid */}
-      <KpiGrid columns={4}>
+        <KpiGrid columns={4}>
         <KpiCard
-          title="Total Nodes"
+          title="Validator Nodes"
           value={totalNodes || nodes.length}
           icon={<Server className="h-4 w-4" />}
           loading={statusLoading}
@@ -185,9 +185,9 @@ export default function NetworkPage() {
       {/* Nodes Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Network Nodes</CardTitle>
+          <CardTitle className="text-base">Validator Set</CardTitle>
           <CardDescription>
-            All nodes participating in the network
+            Validator data reported by the network status endpoint
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -312,7 +312,7 @@ function PageHeader() {
     <div>
       <h1 className="text-3xl font-bold tracking-tight">Network</h1>
       <p className="text-muted-foreground mt-1">
-        Monitor network nodes and their participation
+        Monitor validator participation and reported network health
       </p>
     </div>
   );

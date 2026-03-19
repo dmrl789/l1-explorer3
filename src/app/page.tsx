@@ -42,7 +42,7 @@ export default function Dashboard() {
     : health === "healthy" ? "Healthy" 
     : health === "degraded" ? "Degraded" 
     : health === "unhealthy" ? "Unhealthy" 
-    : isConnected ? "Healthy" // If we have data, assume healthy
+    : isConnected ? "Connected"
     : "Unknown";
   
   const monotonic = status?.ippan_time?.monotonic;

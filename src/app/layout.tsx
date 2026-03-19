@@ -4,6 +4,7 @@ import "./globals.css";
 import "./styles/utilities.css";
 import { TopNav } from "@/components/top-nav";
 import { Footer } from "@/components/footer";
+import { getUpstreams } from "@/lib/upstreams";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -28,13 +29,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const upstream =
-    (process.env.UPSTREAM_V1_BASES ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)[0] ??
-    process.env.NEXT_PUBLIC_UPSTREAM_RPC_BASE ??
-    process.env.UPSTREAM_RPC_BASE;
+  const upstreams = getUpstreams();
+  const upstreamLabel =
+    upstreams.length > 0
+      ? `${upstreams.length} configured, primary ${upstreams[0]}`
+      : process.env.NEXT_PUBLIC_UPSTREAM_RPC_BASE ??
+        process.env.UPSTREAM_RPC_BASE ??
+        "(not configured)";
 
   return (
     <html lang="en">
@@ -44,7 +45,7 @@ export default function RootLayout({
           <main className="mx-auto w-full max-w-7xl px-3 pb-24 pt-4 sm:px-4 sm:pt-6 sm:pb-28 lg:pb-12 lg:px-8 lg:pt-8">
             {children}
           </main>
-          <Footer upstream={upstream} />
+          <Footer upstreamLabel={upstreamLabel} />
         </div>
       </body>
     </html>

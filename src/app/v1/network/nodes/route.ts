@@ -64,15 +64,24 @@ function extractValidators(data: Record<string, unknown>): ValidatorNode[] {
 
   return validatorIds.map((id: string) => {
     const v = validatorsData[id] ?? {};
+    const connected = v.is_connected;
+    const statusRaw = String(v.status ?? "").toLowerCase();
     
     // Calculate uptime percent (backend returns 0-10000 scale)
     const uptimeRaw = (v.uptime as number) ?? 0;
     const uptimePercent = uptimeRaw > 100 ? uptimeRaw / 100 : uptimeRaw;
 
+    let status: ValidatorNode["status"] = "unknown";
+    if (connected === true || statusRaw === "online" || statusRaw === "connected" || statusRaw === "active") {
+      status = "online";
+    } else if (connected === false || statusRaw === "offline" || statusRaw === "disconnected" || statusRaw === "inactive") {
+      status = "offline";
+    }
+
     return {
       node_id: id,
       role: "validator" as const,
-      status: "online" as const, // If in validator list, assume online
+      status,
       uptime_percent: uptimePercent,
       blocks_proposed: v.blocks_proposed as number | undefined,
       blocks_verified: v.blocks_verified as number | undefined,
@@ -163,19 +172,10 @@ export async function GET() {
     return res;
   }
 
-  // No snapshot available - return fallback with known validator IDs
-  // These are the 4 validators from the DevNet
-  const fallbackNodes: ValidatorNode[] = [
-    { node_id: "254451713534628ea230235ed2b49dd66e30ae378c631e4e04c07b7a14c2bfcb", role: "validator", status: "online" },
-    { node_id: "460c56d288d1d77a8f0f0a0e6a403fe8c2f0a2fc20e153a34d5ebafc08c520d2", role: "validator", status: "online" },
-    { node_id: "60a53cdfed305dd03e389642e737c5737603b01e6ab0ae0cba8fa46f701860dd", role: "validator", status: "online" },
-    { node_id: "df312d197f089118a7095cd466cdf84527f6b4062774b825a41b2371bc874743", role: "validator", status: "online" },
-  ];
-
   const response = {
-    nodes: fallbackNodes,
-    total_nodes: fallbackNodes.length,
-    online_nodes: fallbackNodes.length,
+    nodes: [],
+    total_nodes: 0,
+    online_nodes: 0,
     fallback: true,
   };
 
