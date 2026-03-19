@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeIntegerMicros } from '../time';
 
 /**
  * Schema for network status response
@@ -9,6 +10,7 @@ export const IppanTimeSchema = z.object({
   monotonic: z.boolean().optional().default(true),
   drift_ms: z.number().optional().default(0),
   source: z.string().optional(),
+  unit: z.string().optional(),
 });
 
 export const FinalityStatsSchema = z.object({
@@ -83,19 +85,8 @@ export function normalizeStatus(raw: unknown): Status {
     ...data,
     // Normalize health field
     health: normalizeHealth(data.health ?? data.status ?? data.state),
-    // Normalize IPPAN time - use utc_now_us from the backend
-    // Note: ippan_time may be explicitly null, so check for truthy value
-    ippan_time: normalizeIppanTime(
-      // Prefer the microsecond protocol time fields exposed by the node RPC.
-      data.ippan_time_us ||
-        data.time_us ||
-        // Legacy / transitional field names.
-        data.ippan_now_us ||
-        data.utc_now_us ||
-        data.ippan_time ||
-        data.time ||
-        data.timestamp
-    ),
+    // Normalize canonical IPPAN protocol time only from explicit protocol fields.
+    ippan_time: normalizeIppanTime(data.ippan_time ?? data.ippan_time_us ?? data.ippan_now_us),
     // Normalize finality
     finality: normalizeFinality(data.finality ?? data.finality_stats),
     // Normalize head state - use consensus.round from the backend
@@ -137,25 +128,21 @@ function normalizeHealth(raw: unknown): NetworkHealth {
 function normalizeIppanTime(raw: unknown): IppanTime | undefined {
   if (!raw) return undefined;
 
-  if (typeof raw === 'number') {
-    if (!Number.isFinite(raw)) return undefined;
-    return { value: String(raw), monotonic: true, drift_ms: 0 };
-  }
-
-  if (typeof raw === 'string') {
-    const v = raw.trim();
-    if (!v) return undefined;
-    return { value: v, monotonic: true, drift_ms: 0 };
+  const numericMicros = normalizeIntegerMicros(raw);
+  if (numericMicros !== undefined) {
+    return { value: String(numericMicros), monotonic: true, drift_ms: 0, unit: 'us' };
   }
 
   if (typeof raw === 'object' && raw !== null) {
     const obj = raw as Record<string, unknown>;
-    const vRaw = obj.value ?? obj.timestamp ?? obj.time ?? 0;
+    const value = normalizeIntegerMicros(obj.value);
+    if (value === undefined) return undefined;
     return {
-      value: typeof vRaw === 'string' ? vRaw.trim() : String(vRaw),
+      value: String(value),
       monotonic: Boolean(obj.monotonic ?? true),
       drift_ms: Number(obj.drift_ms ?? obj.drift ?? 0),
       source: obj.source as string | undefined,
+      unit: (obj.unit as string | undefined) ?? 'us',
     };
   }
 

@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import { listRounds, getRound, type RoundsListResponse, type RoundDetail } from '../api';
 
-const ROUNDS_REFRESH_INTERVAL = 5000; // 5 seconds
+const ROUNDS_REFRESH_INTERVAL = 3000; // 3 seconds
 
 export function useRounds(limit: number = 20) {
   const { data, error, isLoading, isValidating, mutate } = useSWR<RoundsListResponse>(
@@ -44,7 +44,9 @@ export function useRoundsInfinite(limit: number = 20) {
     }
   );
 
-  const rounds = data ? data.flatMap(page => page.rounds) : [];
+  const rounds = data
+    ? data.flatMap(page => page.rounds).sort((a, b) => Number(b.round_id) - Number(a.round_id))
+    : [];
   const hasMore = data ? data[data.length - 1]?.has_more ?? false : false;
 
   return {

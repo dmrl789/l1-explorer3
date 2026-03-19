@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeIntegerMicros } from '../time';
 
 /**
  * Schema for rounds
@@ -78,7 +79,11 @@ export function normalizeRoundsList(raw: unknown): RoundsListResponse {
   
   // Handle object with rounds array
   const roundsRaw = data.rounds ?? data.items ?? data.data ?? data.results ?? [];
-  const rounds = Array.isArray(roundsRaw) ? roundsRaw.map(normalizeRoundSummary) : [];
+  const rounds = Array.isArray(roundsRaw)
+    ? roundsRaw
+        .map(normalizeRoundSummary)
+        .sort((a, b) => Number(b.round_id) - Number(a.round_id))
+    : [];
   
   return {
     rounds,
@@ -112,7 +117,7 @@ export function normalizeRoundSummary(raw: unknown): RoundSummary {
     finality_ms: (data.finality_ms ?? data.finality) as number | undefined,
     block_count: Number(data.block_count ?? blocksArr?.length ?? data.blockCount ?? 0),
     tx_count: Number(data.tx_count ?? data.transaction_count ?? data.txCount ?? 0),
-    timestamp: (data.window_end_us ?? data.timestamp) as number | undefined,
+    timestamp: normalizeIntegerMicros(data.window_end_us ?? data.ippan_time_us ?? data.hashtimer_timestamp_us),
     created_at: (data.created_at ?? data.createdAt ?? data.time) as string | undefined,
   };
 }
@@ -155,9 +160,9 @@ export function normalizeRoundDetail(raw: unknown): RoundDetail {
       ? participantsRaw.map(normalizeParticipant)
       : [],
     proof: normalizeProof(data.proof ?? data.certificate),
-    proposed_at: (data.proposed_at ?? data.proposedAt ?? data.window_start_us) as number | undefined,
-    verified_at: (data.verified_at ?? data.verifiedAt) as number | undefined,
-    finalized_at: (data.finalized_at ?? data.finalizedAt ?? data.window_end_us) as number | undefined,
+    proposed_at: normalizeIntegerMicros(data.proposed_at ?? data.proposedAt ?? data.window_start_us),
+    verified_at: normalizeIntegerMicros(data.verified_at ?? data.verifiedAt),
+    finalized_at: normalizeIntegerMicros(data.finalized_at ?? data.finalizedAt ?? data.window_end_us),
     state_root: (data.state_root ?? data.stateRoot) as string | undefined,
     round_root: (data.round_root ?? data.roundRoot ?? data.round_hash) as string | undefined,
   };

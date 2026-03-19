@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import { listTx, getTx, type TxListResponse, type TxDetail } from '../api';
 
-const TX_REFRESH_INTERVAL = 5000; // 5 seconds
+const TX_REFRESH_INTERVAL = 3000; // 3 seconds
 
 export function useTransactions(limit: number = 20) {
   const { data, error, isLoading, isValidating, mutate } = useSWR<TxListResponse>(
@@ -44,7 +44,11 @@ export function useTransactionsInfinite(limit: number = 20) {
     }
   );
 
-  const transactions = data ? data.flatMap(page => page.transactions) : [];
+  const transactions = data
+    ? data
+        .flatMap(page => page.transactions)
+        .sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
+    : [];
   const hasMore = data ? data[data.length - 1]?.has_more ?? false : false;
 
   return {

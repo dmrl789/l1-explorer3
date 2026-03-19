@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeIntegerMicros } from '../time';
 
 /**
  * Schema for transactions
@@ -78,7 +79,11 @@ export function normalizeTxList(raw: unknown): TxListResponse {
   
   // Handle object with transactions array
   const txsRaw = data.transactions ?? data.txs ?? data.items ?? data.data ?? data.results ?? [];
-  const transactions = Array.isArray(txsRaw) ? txsRaw.map(normalizeTxSummary) : [];
+  const transactions = Array.isArray(txsRaw)
+    ? txsRaw
+        .map(normalizeTxSummary)
+        .sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
+    : [];
   
   return {
     transactions,
@@ -127,7 +132,7 @@ export function normalizeTxSummary(raw: unknown): TxSummary {
     from: (data.from ?? data.sender ?? data.origin) as string | undefined,
     to: (data.to ?? data.receiver ?? data.destination) as string | undefined,
     amount: (data.amount ?? data.amount_atomic) as string | undefined,
-    timestamp: data.timestamp as number | undefined,
+    timestamp: normalizeIntegerMicros(data.ippan_time_us ?? data.hashtimer_timestamp_us ?? data.timestamp),
     created_at: (data.created_at ?? data.createdAt ?? data.time) as string | undefined,
   };
 }
@@ -148,8 +153,8 @@ export function normalizeTxDetail(raw: unknown): TxDetail {
     const statusStr = String(data.status ?? data.status_v2 ?? '').toLowerCase();
     if (statusStr.includes('mempool') || statusStr === 'accepted_to_mempool') {
       lifecycle = [
-        { stage: 'ingress_checked', timestamp: data.first_seen_ts as number | undefined ?? data.timestamp as number | undefined },
-        { stage: 'hashtimer_assigned', timestamp: data.timestamp as number | undefined },
+        { stage: 'ingress_checked', timestamp: normalizeIntegerMicros(data.first_seen_ts) ?? summary.timestamp },
+        { stage: 'hashtimer_assigned', timestamp: summary.timestamp },
       ];
     }
   }
@@ -189,7 +194,7 @@ function normalizeLifecycleEvent(raw: unknown): TxLifecycleEvent {
   
   return {
     stage,
-    timestamp: data.timestamp as number | undefined,
+    timestamp: normalizeIntegerMicros(data.timestamp),
     latency_ms: (data.latency_ms ?? data.latency) as number | undefined,
     details: data.details as Record<string, unknown> | undefined,
   };
@@ -201,35 +206,35 @@ function buildLifecycleFromFields(data: Record<string, unknown>): TxLifecycleEve
   if (data.ingress_time ?? data.received_at) {
     events.push({
       stage: 'ingress_checked',
-      timestamp: Number(data.ingress_time ?? data.received_at),
+      timestamp: normalizeIntegerMicros(data.ingress_time ?? data.received_at),
     });
   }
   
   if (data.hashtimer_time ?? data.ordered_at) {
     events.push({
       stage: 'hashtimer_assigned',
-      timestamp: Number(data.hashtimer_time ?? data.ordered_at),
+      timestamp: normalizeIntegerMicros(data.hashtimer_time ?? data.ordered_at),
     });
   }
   
   if (data.block_time ?? data.included_at) {
     events.push({
       stage: 'included_block',
-      timestamp: Number(data.block_time ?? data.included_at),
+      timestamp: normalizeIntegerMicros(data.block_time ?? data.included_at),
     });
   }
   
   if (data.round_time) {
     events.push({
       stage: 'included_round',
-      timestamp: Number(data.round_time),
+      timestamp: normalizeIntegerMicros(data.round_time),
     });
   }
   
   if (data.finalized_time ?? data.finalized_at) {
     events.push({
       stage: 'finalized',
-      timestamp: Number(data.finalized_time ?? data.finalized_at),
+      timestamp: normalizeIntegerMicros(data.finalized_time ?? data.finalized_at),
     });
   }
   

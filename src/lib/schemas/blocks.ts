@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeIntegerMicros } from '../time';
 
 /**
  * Schema for blocks
@@ -55,7 +56,11 @@ export function normalizeBlocksList(raw: unknown): BlocksListResponse {
   
   // Handle object with blocks array
   const blocksRaw = data.blocks ?? data.items ?? data.data ?? data.results ?? [];
-  const blocks = Array.isArray(blocksRaw) ? blocksRaw.map(normalizeBlockSummary) : [];
+  const blocks = Array.isArray(blocksRaw)
+    ? blocksRaw
+        .map(normalizeBlockSummary)
+        .sort((a, b) => (b.ippan_time ?? b.timestamp ?? 0) - (a.ippan_time ?? a.timestamp ?? 0))
+    : [];
   
   return {
     blocks,
@@ -91,10 +96,13 @@ export function normalizeBlockSummary(raw: unknown): BlockSummary {
     txCount = Number(data.txCount);
   }
 
-  const ippanTimeRaw =
-    data.ippan_time ?? data.ippanTime ?? data.ippan_now_us ?? data.utc_now_us ?? data.time_us ?? data.timestamp_us;
-  const ippanTimeNum = ippanTimeRaw !== undefined ? Number(ippanTimeRaw) : undefined;
-  const ippan_time = ippanTimeNum !== undefined && Number.isFinite(ippanTimeNum) ? ippanTimeNum : undefined;
+  const ippan_time = normalizeIntegerMicros(
+    data.ippan_time_us ??
+      data.ippan_time ??
+      data.hashtimer_timestamp_us ??
+      data.timestamp_us ??
+      data.timestamp
+  );
   
   return {
     block_id: String(data.block_id ?? data.id ?? data.hash ?? ''),
