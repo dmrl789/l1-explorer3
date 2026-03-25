@@ -14,7 +14,9 @@ import {
   Zap,
   Server,
   RefreshCw,
+  ArrowRight,
 } from 'lucide-react';
+import Link from 'next/link';
 import {
   useStatus,
   useProofBuild,
@@ -61,7 +63,7 @@ export default function EvidencePage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">DevNet Evidence</h1>
           <p className="text-muted-foreground mt-1">
-            Live proof of DLC consensus operation with D-GBDT fairness
+            Live proof of DLC BlockDAG operation with continuous blocklets and D-GBDT fairness
           </p>
         </div>
         <Button variant="outline" onClick={refreshAll}>
@@ -69,6 +71,27 @@ export default function EvidencePage() {
           Refresh
         </Button>
       </div>
+
+      {/* 9M TPS Breakthrough Banner */}
+      <Link href="/evidence/9m-tps" className="block group">
+        <Card className="border-emerald-500/30 bg-gradient-to-r from-emerald-500/5 via-transparent to-purple-500/5 hover:border-emerald-500/50 transition-colors">
+          <CardContent className="flex items-center gap-4 py-5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+              <Zap className="h-6 w-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold">8.85 Million Finalized TPS</span>
+                <Badge variant="success">VERIFIED</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Cross-continent DLC benchmark — Detroit to Falkenstein, 106ms RTT. View full evidence, hardware topology, and downloadable proof bundles.
+              </p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-emerald-400 transition-colors shrink-0" />
+          </CardContent>
+        </Card>
+      </Link>
 
       {/* Build & Consensus Mode */}
       <Card>
@@ -271,9 +294,9 @@ export default function EvidencePage() {
               <Zap className="h-4 w-4" />
               Transaction Pipeline Proof
             </CardTitle>
-            <CardDescription>
-              End-to-end transaction processing — RPC ingress through DLC finality
-            </CardDescription>
+          <CardDescription>
+            End-to-end transaction processing — RPC ingress through continuous blocklet production into 250 ms DLC round finality
+          </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -328,9 +351,9 @@ export default function EvidencePage() {
               <Cpu className="h-4 w-4" />
               Performance Proof
             </CardTitle>
-            <CardDescription>
-              Stage2b pipeline timing, storage durability, and round assembly metrics
-            </CardDescription>
+          <CardDescription>
+            Stage2b pipeline timing, continuous blocklet production, storage durability, and 250 ms round assembly metrics
+          </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -466,12 +489,13 @@ export default function EvidencePage() {
             DevNet Configuration
           </CardTitle>
           <CardDescription>
-            Architecture: DLC consensus with D-GBDT fairness, 16 groups / 256 lanes, CPU-only verification
+            Architecture: DLC BlockDAG with D-GBDT fairness, 16 groups / 256 lanes, continuous blocklets, and CPU-only verification
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <ConfigItem label="Consensus" value="DLC + D-GBDT Fairness" />
+            <ConfigItem label="BlockDAG Mode" value="Continuous Blocklets" />
             <ConfigItem label="Round Finality" value={roundTickMs ? `${roundTickMs}ms` : '250ms'} />
             <ConfigItem label="Groups" value="16" />
             <ConfigItem label="Lanes" value="256" />
@@ -503,8 +527,8 @@ export default function EvidencePage() {
             <li className="flex items-start gap-2">
               <span className="text-yellow-600 mt-1">•</span>
               <span>
-                <strong>D-GBDT Model:</strong> Fairness model runs in stub mode on devnet
-                (IPPAN_DGBDT_ALLOW_STUB=1). Full model requires training data.
+                <strong>D-GBDT Model:</strong> Runtime now requires the real trained model data.
+                Stub fallback is not allowed in production paths.
               </span>
             </li>
             <li className="flex items-start gap-2">
@@ -534,7 +558,25 @@ export default function EvidencePage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Link
+              href="/evidence/9m-tps"
+              className={cn(
+                'flex items-start gap-3 p-4 rounded-lg border',
+                'hover:bg-accent hover:border-accent-foreground/20 transition-colors',
+                'group border-emerald-500/20'
+              )}
+            >
+              <div className="text-emerald-400 group-hover:text-emerald-300 transition-colors">
+                <Zap className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1">
+                  <span className="font-medium">9M TPS Breakthrough</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Full evidence: metrics, topology, proof bundles</p>
+              </div>
+            </Link>
             <ResourceLink
               icon={<FileText className="h-5 w-5" />}
               title="Finality & Status KPIs"
