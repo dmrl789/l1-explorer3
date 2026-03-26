@@ -10,6 +10,8 @@ const DEVNET_UPSTREAMS = [
   "http://172.245.233.71:8080", // New York
   "http://51.158.157.222:8080", // Amsterdam
   "http://136.243.59.218:8080", // Falkenstein
+  "http://38.127.61.11:8080",   // Miami 1
+  "http://38.127.61.111:8080",  // Miami 2
 ];
 
 export function getUpstreams(): string[] {
