@@ -13,13 +13,14 @@ import {
   Zap,
   RefreshCw,
 } from 'lucide-react';
-import { useTransaction } from '@/lib/hooks';
+import { useRound, useTransaction, useTransactions } from '@/lib/hooks';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DetailPageSkeleton } from '@/components/skeletons';
 import { ErrorState } from '@/components/error-state';
 import { CopyableText, HashDisplay } from '@/components/copy-button';
+import { FinalityVerificationCard } from '@/components/finality-verification';
 import { cn } from '@/lib/utils';
 import { microsToDate } from '@/lib/time';
 import type { TxLifecycleStage } from '@/lib/schemas';
@@ -69,6 +70,10 @@ const lifecycleStages: Array<{
 export default function TransactionDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const { transaction, isLoading, notFound, error, refresh } = useTransaction(id);
+  const { transactions } = useTransactions(25);
+  const recentSummary = transactions.find((item) => item.tx_id === transaction?.tx_id);
+  const canonicalRoundId = recentSummary?.round_id ?? transaction?.round_id;
+  const { round } = useRound(canonicalRoundId !== undefined ? String(canonicalRoundId) : undefined);
 
   if (isLoading) {
     return <DetailPageSkeleton />;
@@ -93,9 +98,17 @@ export default function TransactionDetailPage({ params }: PageProps) {
 
   if (!transaction) return null;
 
+  const canonicalTransaction = {
+    ...transaction,
+    block_id: recentSummary?.block_id ?? transaction.block_id,
+    round_id: recentSummary?.round_id ?? transaction.round_id,
+    finalized: recentSummary?.finalized ?? transaction.finalized,
+    type: recentSummary?.type ?? transaction.type,
+  };
+
   // Build lifecycle state map
   const lifecycleMap = new Map(
-    transaction.lifecycle.map(event => [event.stage, event])
+    canonicalTransaction.lifecycle.map(event => [event.stage, event])
   );
 
   // Determine which stages are complete
@@ -263,6 +276,71 @@ export default function TransactionDetailPage({ params }: PageProps) {
         </Card>
       )}
 
+      <FinalityVerificationCard
+        description="Trace the transaction from submission to the finalized round and export an audit-grade JSON certificate."
+        certificateBlockHash={canonicalTransaction.block_id}
+        stages={[
+          {
+            label: 'Submitted',
+            state: lifecycleMap.has('ingress_checked') ? 'complete' : 'current',
+            detail: lifecycleMap.get('ingress_checked')?.timestamp
+              ? microsToDate(lifecycleMap.get('ingress_checked')?.timestamp ?? 0)?.toLocaleString()
+              : 'Transaction accepted into the pipeline',
+          },
+          {
+            label: 'Included in Block',
+            state: canonicalTransaction.block_id ? 'complete' : canonicalTransaction.type === 'mempool' ? 'current' : 'pending',
+            detail: canonicalTransaction.block_id ?? 'Waiting for block inclusion',
+            href: canonicalTransaction.block_id ? `/blocks/${canonicalTransaction.block_id}` : undefined,
+          },
+          {
+            label: 'Included in Round',
+            state: canonicalTransaction.round_id !== undefined ? 'complete' : canonicalTransaction.type === 'mempool' ? 'pending' : 'current',
+            detail: canonicalTransaction.round_id !== undefined ? `Round #${canonicalTransaction.round_id}` : 'Waiting for round assignment',
+            href: canonicalTransaction.round_id !== undefined ? `/rounds/${canonicalTransaction.round_id}` : undefined,
+          },
+          {
+            label: 'Finalized',
+            state: round?.status === 'finalized' || canonicalTransaction.finalized ? 'complete' : canonicalTransaction.block_id ? 'current' : 'pending',
+            detail:
+              round?.status === 'finalized'
+                ? `Round #${round.round_id} finalized with ${round.proof?.signers?.length ?? 0} signers`
+                : canonicalTransaction.finalized
+                  ? 'Finality reported by transaction summary'
+                  : 'Awaiting finalized round proof',
+          },
+        ]}
+        artifact={{
+          subject: 'transaction',
+          txHash: canonicalTransaction.tx_id,
+          blockHash: canonicalTransaction.block_id,
+          roundId: canonicalTransaction.round_id,
+          ippanTimeUs: lifecycleMap.get('finalized')?.timestamp ?? canonicalTransaction.timestamp,
+          finalityStatus:
+            round?.status === 'finalized'
+              ? 'finalized'
+              : canonicalTransaction.finalized
+                ? 'reported-finalized'
+                : canonicalTransaction.type ?? 'pending',
+          verifierMetadata: {
+            round_status: round?.status,
+            round_signers: round?.proof?.signers ?? [],
+            round_threshold: round?.proof?.threshold,
+          },
+          proofData: {
+            lifecycle: canonicalTransaction.lifecycle,
+            round_proof_hash: round?.proof?.proof_hash,
+            round_root: round?.round_root,
+            state_root: round?.state_root,
+          },
+          sources: {
+            transaction_status: canonicalTransaction.status,
+            transaction_type: canonicalTransaction.type,
+          },
+        }}
+        emptyMessage="The transaction has a trace path, but no live block certificate has been published for it yet."
+      />
+
       {/* Details Grid */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Links */}
@@ -271,25 +349,25 @@ export default function TransactionDetailPage({ params }: PageProps) {
             <CardTitle className="text-base">References</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {transaction.block_id && (
+            {canonicalTransaction.block_id && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Block</span>
                 <Link 
-                  href={`/blocks/${transaction.block_id}`}
+                  href={`/blocks/${canonicalTransaction.block_id}`}
                   className="font-mono text-sm hover:text-primary transition-colors"
                 >
-                  {transaction.block_id.slice(0, 8)}...{transaction.block_id.slice(-6)}
+                  {canonicalTransaction.block_id.slice(0, 8)}...{canonicalTransaction.block_id.slice(-6)}
                 </Link>
               </div>
             )}
-            {transaction.round_id && (
+            {canonicalTransaction.round_id && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Round</span>
                 <Link 
-                  href={`/rounds/${transaction.round_id}`}
+                  href={`/rounds/${canonicalTransaction.round_id}`}
                   className="font-mono text-sm hover:text-primary transition-colors"
                 >
-                  #{transaction.round_id}
+                  #{canonicalTransaction.round_id}
                 </Link>
               </div>
             )}

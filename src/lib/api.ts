@@ -51,6 +51,10 @@ import {
   normalizeProofPipeline,
   normalizeProofPerf,
   normalizeProofSizing,
+  type FinalityCertificate,
+  type FinalityProofBundle,
+  normalizeFinalityCertificate,
+  normalizeFinalityProofBundle,
 } from './schemas';
 
 // Re-export types for convenience
@@ -73,6 +77,8 @@ export type {
   ProofPipeline,
   ProofPerf,
   ProofSizing,
+  FinalityCertificate,
+  FinalityProofBundle,
 };
 
 export { ApiRequestError };
@@ -373,6 +379,29 @@ export async function getProofSizing(): Promise<ProofSizing | null> {
   try {
     const data = await fetchJson<unknown>('/v1/proof/sizing');
     return normalizeProofSizing(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function getFinalityCertificate(blockId: string): Promise<FinalityCertificate | null> {
+  try {
+    const data = await fetchJson<unknown>(`/finality/${encodeURIComponent(blockId)}`);
+    return normalizeFinalityCertificate(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function getFinalityProofBundle(
+  kind: 'block' | 'tx',
+  id: string
+): Promise<FinalityProofBundle | null> {
+  try {
+    const data = await fetchJson<unknown>(
+      `/v1/proof-bundles/${kind}/${encodeURIComponent(id)}`
+    );
+    return normalizeFinalityProofBundle(data);
   } catch {
     return null;
   }

@@ -9,13 +9,14 @@ import {
   ArrowRightLeft,
   RefreshCw,
 } from 'lucide-react';
-import { useBlock } from '@/lib/hooks';
+import { useBlock, useRound } from '@/lib/hooks';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DetailPageSkeleton } from '@/components/skeletons';
 import { ErrorState } from '@/components/error-state';
 import { CopyableText, HashDisplay } from '@/components/copy-button';
+import { FinalityVerificationCard } from '@/components/finality-verification';
 import { cn } from '@/lib/utils';
 
 interface PageProps {
@@ -25,6 +26,7 @@ interface PageProps {
 export default function BlockDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const { block, isLoading, notFound, error, refresh } = useBlock(id);
+  const { round } = useRound(block?.round_id !== undefined ? String(block.round_id) : undefined);
 
   if (isLoading) {
     return <DetailPageSkeleton />;
@@ -139,6 +141,65 @@ export default function BlockDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </div>
+
+      <FinalityVerificationCard
+        description="Verify the block’s path from proposal into a round and export the live JSON finality artifact."
+        certificateBlockHash={block.block_id}
+        stages={[
+          {
+            label: 'Proposed',
+            state: 'complete',
+            detail: block.proposer ? `Proposer ${block.proposer.slice(0, 16)}…` : 'Block published to the explorer',
+          },
+          {
+            label: 'Approved',
+            state: round?.proof?.signers?.length ? 'complete' : block.round_id ? 'current' : 'pending',
+            detail:
+              round?.proof?.threshold !== undefined
+                ? `${round.proof.signers?.length ?? 0} / ${round.proof.threshold} round approvals`
+                : 'Awaiting signer threshold data',
+          },
+          {
+            label: 'Included in Round',
+            state: block.round_id ? 'complete' : 'pending',
+            detail: block.round_id ? `Round #${block.round_id}` : 'Waiting for round inclusion',
+            href: block.round_id ? `/rounds/${block.round_id}` : undefined,
+          },
+          {
+            label: 'Finalized',
+            state: round?.status === 'finalized' || block.finalized ? 'complete' : block.round_id ? 'current' : 'pending',
+            detail:
+              round?.status === 'finalized'
+                ? `State root ${round.state_root?.slice(0, 16) ?? '—'}…`
+                : block.finalized
+                  ? 'Finality reported by block metadata'
+                  : 'Awaiting finality certificate',
+          },
+        ]}
+        artifact={{
+          subject: 'block',
+          blockHash: block.block_id,
+          roundId: block.round_id,
+          ippanTimeUs: block.ippan_time ?? block.timestamp,
+          finalityStatus: round?.status ?? (block.finalized ? 'finalized' : 'pending'),
+          verifierMetadata: {
+            proposer: block.proposer,
+            round_signers: round?.proof?.signers ?? [],
+            round_threshold: round?.proof?.threshold,
+          },
+          proofData: {
+            parents: block.parents,
+            children: block.children,
+            state_root: block.state_root,
+            round_root: round?.round_root,
+          },
+          sources: {
+            tx_count: block.tx_count,
+            deterministic_position: block.deterministic_position,
+          },
+        }}
+        emptyMessage="No live finality certificate is available for this block yet."
+      />
 
       {/* HashTimer */}
       {block.hashtimer && (

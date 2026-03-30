@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { DetailPageSkeleton } from '@/components/skeletons';
 import { ErrorState } from '@/components/error-state';
 import { CopyableText, HashDisplay } from '@/components/copy-button';
+import { FinalityVerificationCard } from '@/components/finality-verification';
 import { cn } from '@/lib/utils';
 import { microsToDate } from '@/lib/time';
 import type { RoundStatus } from '@/lib/schemas';
@@ -188,6 +189,65 @@ export default function RoundDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </div>
+
+      <FinalityVerificationCard
+        description="Inspect the round lifecycle, linked block inclusion, proof roots, and export the round audit record."
+        certificateBlockHash={round.blocks[0]}
+        downloadLabel="Download Audit Record"
+        stages={[
+          {
+            label: 'Proposed',
+            state: timelineSteps[0].complete ? 'complete' : 'pending',
+            detail: round.proposed_at ? microsToDate(round.proposed_at)?.toLocaleString() : 'Round proposal timestamp unavailable',
+          },
+          {
+            label: 'Approved',
+            state: timelineSteps[1].complete ? 'complete' : round.status === 'proposed' ? 'current' : 'pending',
+            detail:
+              round.proof?.threshold !== undefined
+                ? `${round.proof.signers?.length ?? 0} / ${round.proof.threshold} signer approvals`
+                : 'Signer threshold unavailable',
+          },
+          {
+            label: 'Included Blocks',
+            state: round.blocks.length > 0 ? 'complete' : 'pending',
+            detail: round.blocks.length > 0 ? `${round.blocks.length} block(s) committed to this round` : 'Waiting for block inclusion',
+            href: round.blocks[0] ? `/blocks/${round.blocks[0]}` : undefined,
+          },
+          {
+            label: 'Finalized',
+            state: round.status === 'finalized' ? 'complete' : round.status === 'verified' ? 'current' : 'pending',
+            detail:
+              round.status === 'finalized'
+                ? `State root ${round.state_root?.slice(0, 16) ?? '—'}…`
+                : 'Awaiting finalization proof',
+          },
+        ]}
+        artifact={{
+          subject: 'round',
+          blockHash: round.blocks[0],
+          roundId: round.round_id,
+          ippanTimeUs: round.finalized_at ?? round.verified_at ?? round.proposed_at,
+          finalityStatus: round.status,
+          verifierMetadata: {
+            participants: round.participants,
+            signers: round.proof?.signers ?? [],
+            threshold: round.proof?.threshold,
+          },
+          proofData: {
+            proof_hash: round.proof?.proof_hash,
+            round_root: round.round_root,
+            state_root: round.state_root,
+            signature: round.proof?.signature,
+          },
+          sources: {
+            hashtimer: round.hashtimer,
+            block_count: round.block_count,
+            tx_count: round.tx_count,
+          },
+        }}
+        emptyMessage="No block-level certificate is available for this round yet, but the round proof and state roots are shown above."
+      />
 
       {/* Participants */}
       {round.participants && round.participants.length > 0 && (

@@ -8,15 +8,19 @@ import {
   getProofPipeline,
   getProofPerf,
   getProofSizing,
+  getFinalityCertificate,
+  getFinalityProofBundle,
   type ProofFinality,
   type ProofDlcFinality,
   type ProofBuild,
   type ProofPipeline,
   type ProofPerf,
   type ProofSizing,
+  type FinalityCertificate,
+  type FinalityProofBundle,
 } from '../api';
 
-const PROOF_REFRESH_INTERVAL = 5000; // 5 seconds
+const PROOF_REFRESH_INTERVAL = 3000; // 3 seconds
 
 export function useProofFinality() {
   const { data, error, isLoading, mutate } = useSWR<ProofFinality | null>(
@@ -40,7 +44,7 @@ export function useProofBuild() {
   const { data, error, isLoading, mutate } = useSWR<ProofBuild | null>(
     'proof/build',
     () => getProofBuild(),
-    { refreshInterval: 30000, dedupingInterval: 10000 }
+    { refreshInterval: PROOF_REFRESH_INTERVAL, dedupingInterval: 3000 }
   );
   return { proof: data ?? null, isLoading, error, refresh: () => mutate() };
 }
@@ -67,7 +71,27 @@ export function useProofSizing() {
   const { data, error, isLoading, mutate } = useSWR<ProofSizing | null>(
     'proof/sizing',
     () => getProofSizing(),
-    { refreshInterval: 10000, dedupingInterval: 5000 }
+    { refreshInterval: PROOF_REFRESH_INTERVAL, dedupingInterval: 3000 }
   );
   return { proof: data ?? null, isLoading, error, refresh: () => mutate() };
+}
+
+export function useFinalityCertificate(blockId: string | undefined) {
+  const { data, error, isLoading, mutate } = useSWR<FinalityCertificate | null>(
+    blockId ? ['finality-certificate', blockId] : null,
+    () => getFinalityCertificate(blockId!),
+    { refreshInterval: PROOF_REFRESH_INTERVAL, dedupingInterval: 3000 }
+  );
+
+  return { certificate: data ?? null, isLoading, error, refresh: () => mutate() };
+}
+
+export function useFinalityProofBundle(kind: 'block' | 'tx', id: string | undefined) {
+  const { data, error, isLoading, mutate } = useSWR<FinalityProofBundle | null>(
+    id ? ['finality-proof-bundle', kind, id] : null,
+    () => getFinalityProofBundle(kind, id!),
+    { refreshInterval: PROOF_REFRESH_INTERVAL, dedupingInterval: 3000 }
+  );
+
+  return { bundle: data ?? null, isLoading, error, refresh: () => mutate() };
 }

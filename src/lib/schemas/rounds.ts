@@ -132,13 +132,24 @@ function normalizeRoundStatus(raw: unknown, data?: Record<string, unknown>): Rou
   }
 
   // Infer status from structural data when upstream doesn't provide an
-  // explicit status field.  A round with a state_root and included blocks
-  // has been finalized by consensus.
+  // explicit status field. Only treat a round as finalized when there is
+  // explicit finality evidence, not just because the shape "looks complete".
   if (data) {
+    const diagnostics = data.diagnostics as Record<string, unknown> | undefined;
+    const diagnosticsStatus = diagnostics?.status;
+    if (typeof diagnosticsStatus === 'string') {
+      return normalizeRoundStatus(diagnosticsStatus);
+    }
+
     const hasStateRoot = !!data.state_root;
     const hasBlocks = Array.isArray(data.included_blocks ?? data.blocks) &&
       ((data.included_blocks ?? data.blocks) as unknown[]).length > 0;
-    if (hasStateRoot && hasBlocks) return 'finalized';
+    const hasFinalityProof = Boolean(
+      data.finality_proof ??
+      (data.proof as Record<string, unknown> | undefined)?.signature ??
+      (data.proof as Record<string, unknown> | undefined)?.proof_hash
+    );
+    if (hasFinalityProof && hasStateRoot && hasBlocks) return 'finalized';
     if (hasBlocks) return 'verified';
     if (data.round_id !== undefined) return 'proposed';
   }
