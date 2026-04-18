@@ -88,8 +88,11 @@ interface TimeRangeParams {
   step?: number;
 }
 
-function buildQuery(params: Record<string, string | number | undefined>): string {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
+function buildQuery(params: Record<string, string | number | null | undefined>): string {
+  // Strip both null and undefined — some hooks (e.g. useSWRInfinite getKey for
+  // page 0) seed `cursor` with null, and without this filter the URL would
+  // carry the literal string "null" which strict backends reject.
+  const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== null);
   if (entries.length === 0) return '';
   return '?' + entries.map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join('&');
 }
