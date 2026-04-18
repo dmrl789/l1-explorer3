@@ -327,8 +327,7 @@ export async function listNetworkNodes(): Promise<NetworkNodesResponse> {
 
 export async function getProofFinality(): Promise<ProofFinality | null> {
   try {
-    // Note: /v1/proof/dlc_finality returns the basic summary (despite the name)
-    const data = await fetchJson<unknown>('/v1/proof/dlc_finality');
+    const data = await fetchJson<unknown>('/v1/proof/finality');
     return normalizeProofFinality(data);
   } catch {
     return null;
@@ -337,8 +336,7 @@ export async function getProofFinality(): Promise<ProofFinality | null> {
 
 export async function getProofDlcFinality(): Promise<ProofDlcFinality | null> {
   try {
-    // Note: /v1/proof/finality returns the DLC-detailed data (node_id, lag_us, dual, async_writer)
-    const data = await fetchJson<unknown>('/v1/proof/finality');
+    const data = await fetchJson<unknown>('/v1/proof/dlc_finality');
     return normalizeProofDlcFinality(data);
   } catch {
     return null;
